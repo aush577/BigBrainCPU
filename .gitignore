@@ -1,1 +1,5 @@
 mp4/db
+mp4/hdl/*.bak
+mp4/output_files
+mp4/incremental_db
+mp4/mp4.qws
