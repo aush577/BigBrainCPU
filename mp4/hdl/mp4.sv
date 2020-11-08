@@ -5,21 +5,20 @@ module mp4(
   // I-Cache
   input icache_resp,
   input icache_rdata,
-  output icache_address,
+  output [31:0] icache_address,
   output icache_read,
   output icache_write,
-  output icache_wdata,
-  output icache_mbe,
+  output [31:0] icache_wdata,
+  output [3:0] icache_mbe,
 
   // D-Cache
   input dcache_resp,
   input dcache_rdata,
-  output dcache_address,
+  output [31:0] dcache_address,
   output dcache_read,
   output dcache_write,
-  output dcache_wdata,
-  output dcache_mbe
-
+  output [31:0] dcache_wdata,
+  output [3:0] dcache_mbe
 );
 
 datapath dp (

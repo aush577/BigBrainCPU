@@ -10,60 +10,93 @@ module datapath (
   // I-Cache
   input icache_resp,
   input icache_rdata,
-  output icache_address,
+  output [31:0] icache_address,
   output icache_read,
   output icache_write,
-  output icache_wdata,
-  output icache_mbe,
+  output [31:0] icache_wdata,
+  output [3:0] icache_mbe,
 
   // D-Cache
   input dcache_resp,
   input dcache_rdata,
-  output dcache_address,
+  output [31:0] dcache_address,
   output dcache_read,
   output dcache_write,
-  output dcache_wdata,
-  output dcache_mbe
-
+  output [31:0] dcache_wdata,
+  output [3:0] dcache_mbe
 );
 
-// ******************** Internal Signals ********************
-instr_struct ifid_ireg_out;
-instr_struct idex_ireg_out;
-instr_struct exmem_ireg_out;
-instr_struct memwb_ireg_out;
+assign icache_write = 1'b0;
+assign icache_wdata = 32'b0;
+assign icache_mbe = 4'b0;
 
-pipe_ctrl_struct pipe_ctrl;
-
-ctrl_word_struct ctrl_word_out;
-ctrl_word_struct idex_ctrlreg_out;
-ctrl_word_struct exmem_ctrlreg_out;
-ctrl_word_struct memwb_ctrlreg_out;
-
+// ******************** Internal Signals BEGIN ********************
+// IF
 logic [31:0] pcreg_out;
 logic [31:0] pcmux_out;
 pcmux::pcmux_sel_t pcmux_sel;
 
-logic [31:0] regfilemux_out;
+// IF/ID
+instr_struct ifid_ireg_out;
+logic [31:0] ifid_pcreg_out;
+
+// ID
+ctrl_word_struct ctrl_word_out;
 logic [31:0] regfile_rs1_out;
 logic [31:0] regfile_rs2_out;
+
+// ID/EX
+instr_struct idex_ireg_out;
+logic [31:0] idex_pcreg_out;
+ctrl_word_struct idex_ctrlreg_out;
 logic [31:0] idex_rs1reg_out;
 logic [31:0] idex_rs2reg_out;
-logic [31:0] exmem_rs1reg_out;
+
+// EX
+logic [31:0] alumux1_out;
+logic [31:0] alumux2_out;
+logic [31:0] alu_out;
+logic [31:0] cmpmux_out;
+logic br_en_cmp;
+logic br_en;
+logic br_signal;
+logic jal_signal;
+logic jalr_signal;
+
+// EX/MEM
+instr_struct exmem_ireg_out;
+logic [31:0] exmem_pcreg_out;
+ctrl_word_struct exmem_ctrlreg_out;
 logic [31:0] exmem_rs2reg_out;
 logic [31:0] exmem_alureg_out;
 logic exmem_brreg_out;
 
-logic [31:0] alumux1_out;
-logic [31:0] alumux2_out;
+// MEM
 
-logic [31:0] cmpmux_out;
-logic br_en_cmp;
-logic br_en;
+// MEM/WB
+instr_struct memwb_ireg_out;
+logic [31:0] memwb_pcreg_out;
+ctrl_word_struct memwb_ctrlreg_out;
+logic [31:0] memwb_alureg_out;
+logic memwb_brreg_out;
+logic [31:0] memwb_memdatareg_out;
 
-logic br_signal;
-logic jal_signal;
-logic jalr_signal;
+// WB
+logic [31:0] regfilemux_out;
+logic [31:0] lb_out;
+logic [31:0] lbu_out;
+logic [31:0] lh_out;
+logic [31:0] lhu_out;
+logic [31:0] lw_out;
+
+// Other
+pipe_ctrl_struct pipe_ctrl;
+assign pipe_ctrl = {$bits(pipe_ctrl_struct){1'b1}};
+
+// ******************** Internal Signals END ********************
+
+
+// ******************** Functions BEGIN********************
 
 // Function to decode instruction into useful pieces
 function instr_decode (logic [31:0] data);
@@ -85,9 +118,13 @@ function instr_decode (logic [31:0] data);
 
 endfunction
 
+// ******************** Functions END ********************
 
-// ******************** IF Stage ********************
 
+
+// ******************** Stages BEGIN ********************
+
+//  ********** IF Stage **********
 always_comb begin : IF_MUXES
   unique case (pcmux_sel)
     pcmux::pc_plus4:  pcmux_out = pcreg_out + 4;
@@ -97,7 +134,7 @@ always_comb begin : IF_MUXES
 end
 
 assign pcmux_sel = pcmux::pcmux_sel_t'(exmem_brreg_out);
-assign icache_address = pcreg_out;
+assign icache_address = {pcreg_out[31:2], 2'b0};
 
 pc_register pcreg (
   .*,
@@ -106,7 +143,8 @@ pc_register pcreg (
   .out(pcreg_out)
 );
 
-// ******************** ID Stage ********************
+
+// ********** ID Stage **********
 regfile rf (
   .*, 
   .load(memwb_ctrlreg_out.regfile_ld), 
@@ -125,8 +163,8 @@ ctrl_rom ctrl_rom(
   .ctrl_word(ctrl_word_out)
 );
 
-// ******************** EX Stage ********************
 
+// ********** EX Stage **********
 always_comb begin : EX_MUXES
   unique case (idex_ctrlreg_out.alumux1_sel)
     alumux::rs1_out:	alumux1_out = idex_rs1reg_out;
@@ -152,9 +190,9 @@ always_comb begin : EX_MUXES
 end
 
 cmp cmp(
-  .cmpop(branch_funct3_t'(idex_ireg_out.funct3)),
+  .cmpop(idex_ctrlreg_out.cmpop),
   .rs1_out(idex_rs1reg_out),
-	.i_imm(idex_ireg_out.i_imm),
+	.cmpmux_out(cmpmux_out),
 	.br_en(br_en_cmp)
 );
 
@@ -162,7 +200,7 @@ alu alu(
   .*, 
   .a(alumux1_out), 
   .b(alumux2_out), 
-  .aluop(alu_ops'(idex_ireg_out.funct3)),  // Casting 3 bits to arith type
+  .aluop(idex_ctrlreg_out.aluop),  // Casting 3 bits to arith type
   .f(alu_out)
 );
 
@@ -174,27 +212,131 @@ always_comb begin: JUMP_LOGIC
   br_en = br_signal | jal_signal | jalr_signal;
 end
 
-// ******************** MEM Stage ********************
+
+// ********** MEM Stage **********
+assign dcache_address = {exmem_alureg_out[31:2], 2'b0};
+assign dcache_read = exmem_ctrlreg_out.dcache_read;
+assign dcache_write = exmem_ctrlreg_out.dcache_write;
+
+always_comb begin: WDATA_LOGIC // Store instructions
+// Get exmem_alureg_out and exmem_rs2reg_out
+// Use these to then decide on what to store
+// Based on store word, we decide on how much we shift rs2
+  logic [4:0] bit_shift = '0;
+  logic [1:0] byte_shift = '0;
+  store_funct3_t store_funct;
+  bit_shift = exmem_alureg_out[1:0] << 3;
+  byte_shift = exmem_alureg_out[1:0];
+  store_funct = store_funct3_t'(exmem_ireg_out.funct3);
+  
+  if (exmem_ireg_out.opcode == op_store) begin
+    if (store_funct == sb) begin // sb
+      dcache_wdata = exmem_rs2reg_out << bit_shift;
+      dcache_mbe = 4'b0001 << byte_shift;
+    end
+    else if (store_funct == sh) begin // sh
+      dcache_wdata = exmem_rs2reg_out << bit_shift;
+      dcache_mbe = 4'b0011 << byte_shift;
+    end
+    else begin  // sw
+      dcache_wdata = exmem_rs2reg_out;
+      dcache_mbe = 4'b1111;
+    end
+  end
+  else begin
+    dcache_wdata = 32'b0; //Not sure about this one...
+    dcache_mbe = 4'b0000;
+  end
+end
+
+// Logic for loading values
+// always_comb begin: LOAD_LOGIC // Load instructions
+//     rv32i_word mid_h;
+//     rv32i_word mid_b;
+//     rv32i_word rd_out;
+
+//     logic [3:0] reg_mask;
+
+//     case (exmem_alureg_out[1:0]):
+//       2'b00: 
+//       2'b01:
+//       2'b10:
+    // logic [1:0] shamt;
+    
+    // for (int i = 0; i < 4; i++) begin
+    //     if (reg_mask[i] == 1) begin
+    //         rd_out[8*i +: 8] = dcache_rdata[8*i +: 8];
+    //     end
+    //     else begin
+    //         rd_out[8*i +: 8] = '0;
+    //     end
+    // end
+    // shamt = dcache_address[1:0];
+    // lw_out = rd_out;
+    // mid_h = rd_out >> (8 * (shamt & 2'b10));
+    // mid_b = rd_out >> (8 * shamt);
+
+    // lh_out = {{16{mid_h[15]}}, mid_h[15:0]};
+    // lb_out = {{24{mid_b[7]}}, mid_b[7:0]};
+    // lhu_out = {16'd0, mid_h[15:0]};
+    // lbu_out = {24'd0, mid_b[7:0]};
+// end
 
 
-// ******************** WB Stage ********************
-
+// ********** WB Stage **********
 always_comb begin : WB_MUXES
   unique case (memwb_ctrlreg_out.regfilemux_sel)
     regfilemux::alu_out: regfilemux_out = memwb_alureg_out;
     regfilemux::u_imm: regfilemux_out = memwb_ireg_out.u_imm;
     regfilemux::pc_plus4: regfilemux_out = memwb_pcreg_out + 4;
     regfilemux::br_en: regfilemux_out =  memwb_brreg_out;
-    regfilemux::lw: regfilemux_out = 32'b0;    //TODO
-    regfilemux::lh: regfilemux_out = 32'b0;    //TODO
-    regfilemux::lb: regfilemux_out = 32'b0;    //TODO
-    regfilemux::lbu: regfilemux_out = 32'b0;  //TODO
-    regfilemux::lhu: regfilemux_out  = 32'b0; //TODO
+    regfilemux::lw: regfilemux_out = lw_out;  // memwb_memdatareg_out
+    regfilemux::lh: regfilemux_out = lh_out;
+    regfilemux::lb: regfilemux_out = lb_out;
+    regfilemux::lbu: regfilemux_out = lbu_out;
+    regfilemux::lhu: regfilemux_out  = lhu_out;
     default: `BAD_MUX_SEL;
   endcase
 end
 
-// ******************** IF/ID Pipeline Registers ********************
+always_comb begin : LOAD_LOGIC // Load instructions
+  lw_out = memwb_memdatareg_out;
+
+  unique case (memwb_alureg_out[1:0])
+    2'b00: lh_out = {{16{memwb_memdatareg_out[15]}}, memwb_memdatareg_out[15:0]};
+    2'b10: lh_out = {{16{memwb_memdatareg_out[31]}}, memwb_memdatareg_out[31:16]};
+    default: lh_out = 32'b0;
+  endcase
+
+  unique case (memwb_alureg_out[1:0])
+    2'b00: lb_out = {{24{memwb_memdatareg_out[ 7]}}, memwb_memdatareg_out[7:0]};
+    2'b01: lb_out = {{24{memwb_memdatareg_out[15]}}, memwb_memdatareg_out[15:8]};
+    2'b10: lb_out = {{24{memwb_memdatareg_out[23]}}, memwb_memdatareg_out[23:16]};
+    2'b11: lb_out = {{24{memwb_memdatareg_out[31]}}, memwb_memdatareg_out[31:24]};
+  endcase
+
+  unique case (memwb_alureg_out[1:0])
+    2'b00: lbu_out = {24'b0, memwb_memdatareg_out[7:0]};
+    2'b01: lbu_out = {24'b0, memwb_memdatareg_out[15:8]};
+    2'b10: lbu_out = {24'b0, memwb_memdatareg_out[23:16]};
+    2'b11: lbu_out = {24'b0, memwb_memdatareg_out[31:24]};
+  endcase
+
+  unique case (memwb_alureg_out[1:0])
+    2'b00: lhu_out = {16'b0, memwb_memdatareg_out[15:0]};
+    2'b10: lhu_out = {16'b0, memwb_memdatareg_out[31:16]};
+    default: lhu_out = 32'b0;
+  endcase
+end
+
+// ******************** Stages END ********************
+
+
+
+
+
+// ******************** Pipeline Registers BEGIN ********************
+// ********** IF/ID Pipeline Registers **********
 // $bits returns size of struct in bits
 register #(.width($bits(instr_struct)))
 ifid_ireg (
@@ -212,7 +354,8 @@ ifid_pcreg (
   .out(ifid_pcreg_out)
 );
 
-// ******************** ID/EX Pipeline Registers ********************
+
+// ********** ID/EX Pipeline Registers **********
 register #(.width($bits(instr_struct)))
 idex_ireg (
   .*,
@@ -245,7 +388,7 @@ idex_rs2reg (
   .out(idex_rs2reg_out)
 );
 
-register #(.width(32))
+register #(.width($bits(ctrl_word_struct)))
 idex_ctrlreg (
   .*,
   .load(pipe_ctrl.idex_ctrlreg_ld),
@@ -253,7 +396,8 @@ idex_ctrlreg (
   .out(idex_ctrlreg_out)
 );
 
-// ******************** EX/MEM Pipeline Registers ********************
+
+// ********** EX/MEM Pipeline Registers **********
 register #(.width($bits(instr_struct)))
 exmem_ireg (
   .*,
@@ -278,7 +422,7 @@ exmem_rs2reg (
   .out(exmem_rs2reg_out)
 );
 
-register #(.width(32))
+register #(.width($bits(ctrl_word_struct)))
 exmem_ctrlreg (
   .*,
   .load(pipe_ctrl.exmem_ctrlreg_ld),
@@ -303,7 +447,7 @@ exmem_brreg (
 );
 
 
-// ******************** MEM/WB Pipeline Registers ********************
+// ********** MEM/WB Pipeline Registers **********
 register #(.width($bits(instr_struct)))
 memwb_ireg (
   .*,
@@ -320,7 +464,7 @@ memwb_pcreg (
   .out(memwb_pcreg_out)
 );
 
-register #(.width(32))
+register #(.width($bits(ctrl_word_struct)))
 memwb_ctrlreg (
   .*,
   .load(pipe_ctrl.memwb_ctrlreg_ld),
@@ -351,5 +495,8 @@ memwb_memrdata (
   .in(dcache_rdata),
   .out(memwb_memdatareg_out)
 );
+
+// ******************** Pipeline Registers END ********************
+
 
 endmodule : datapath

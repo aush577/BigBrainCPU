@@ -45,13 +45,16 @@ typedef struct packed {
 
 // Control word signals
 typedef struct packed {
-  logic pcreg_ld;
-  logic pcmux_sel;
   logic regfile_ld;
   alumux::alumux1_sel_t alumux1_sel;
   alumux::alumux2_sel_t alumux2_sel;
   cmpmux::cmpmux_sel_t cmpmux_sel;
   regfilemux::regfilemux_sel_t regfilemux_sel;
+  logic dcache_read;
+  logic dcache_write;
+  alu_ops aluop;
+  branch_funct3_t cmpop;
+
 } ctrl_word_struct;
 
 endpackage : types
