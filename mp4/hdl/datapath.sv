@@ -249,7 +249,7 @@ always_comb begin : WB_MUXES
     regfilemux::alu_out: regfilemux_out = memwb_alureg_out;
     regfilemux::u_imm: regfilemux_out = memwb_ireg_out.u_imm;
     regfilemux::pc_plus4: regfilemux_out = memwb_pcreg_out + 4;
-    regfilemux::br_en: regfilemux_out =  memwb_brreg_out;
+    regfilemux::br_en: regfilemux_out = {31'd0, memwb_brreg_out};
     regfilemux::lw: regfilemux_out = lw_out;  // memwb_memdatareg_out
     regfilemux::lh: regfilemux_out = lh_out;
     regfilemux::lb: regfilemux_out = lb_out;

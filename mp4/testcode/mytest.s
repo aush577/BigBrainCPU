@@ -1,4 +1,4 @@
-mytest.s:
+# mytest.s:
 .align 4
 .section .text
 .globl _start
@@ -6,10 +6,41 @@ mytest.s:
   # the instructions in this test program.
 _start:
    
-  # lw x8, deadbeef     # x8 <= M[deadbeef]
+  lw x8, deadbeef     # x8 <= M[deadbeef]
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  
   # la x10, store       # x10 <= ADDR[store]
+  # nop
+  # nop
+  # nop
+  # nop
+  # nop
+  # nop
+  # nop
+  
   # sw x8, 0(x10)       # M[x10] <= x8
+  # nop
+  # nop
+  # nop
+  # nop
+  # nop
+  # nop
+  # nop
+
   # lw x9, store        # x9 <= M[store]
+  # nop
+  # nop
+  # nop
+  # nop
+  # nop
+  # nop
+  # nop
 
   # la x10, deadbeef
   # lb x8, 2(x10)
@@ -40,6 +71,6 @@ endloop:
   nop
 
 .section .rodata
-
+.balign 256
 deadbeef: .word 0xdeadbeef
-store:    .word 0x00000000
+store:    .word 0xabcdabcd

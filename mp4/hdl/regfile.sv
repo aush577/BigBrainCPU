@@ -8,6 +8,7 @@ module regfile
     output logic [31:0] reg_a, reg_b
 );
 
+//TODO handle read/write at the same time, pass through write to output
 //logic [31:0] data [32] /* synthesis ramstyle = "logic" */ = '{default:'0};
 logic [31:0] data [32];
 
