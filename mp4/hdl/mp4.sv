@@ -3,22 +3,19 @@ module mp4(
   input rst,
 
   // I-Cache
-  input icache_resp,
-  input [31:0] icache_rdata,
-  output [31:0] icache_address,
-  output icache_read,
-  output icache_write,
-  output [31:0] icache_wdata,
-  output [3:0] icache_mbe,
+  input logic icache_resp,
+  input logic [31:0] icache_rdata,
+  output logic [31:0] icache_address,
+  output logic icache_read,
 
   // D-Cache
-  input dcache_resp,
-  input [31:0] dcache_rdata,
-  output [31:0] dcache_address,
-  output dcache_read,
-  output dcache_write,
-  output [31:0] dcache_wdata,
-  output [3:0] dcache_mbe
+  input logic dcache_resp,
+  input logic [31:0] dcache_rdata,
+  output logic [31:0] dcache_address,
+  output logic dcache_read,
+  output logic dcache_write,
+  output logic [31:0] dcache_wdata,
+  output logic [3:0] dcache_mbe
 );
 
 datapath dp (

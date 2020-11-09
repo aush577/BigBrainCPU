@@ -3,3 +3,6 @@ mp4/hdl/*.bak
 mp4/output_files
 mp4/incremental_db
 mp4/mp4.qws
+mp4/bin
+mp4/mp4_nativelink_simulation.rpt
+mp4/simulation

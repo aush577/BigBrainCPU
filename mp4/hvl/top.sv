@@ -1,4 +1,4 @@
-module mp3_tb;
+module mp4_tb;
 `timescale 1ns/10ps
 
 /********************* Do not touch for proper compilation *******************/
@@ -100,7 +100,24 @@ Burst Memory Ports:
 Please refer to tb_itf.sv for more information.
 */
 
-mp4 dut();
+mp4 dut(
+    .clk(itf.clk),
+    .rst(itf.rst),
+
+    .icache_resp(itf.inst_resp),
+    .icache_rdata(itf.inst_rdata),
+    .icache_address(itf.inst_addr),
+    .icache_read(itf.inst_read),
+
+    .dcache_resp(itf.data_resp),
+    .dcache_rdata(itf.data_rdata),
+    .dcache_address(itf.data_addr),
+    .dcache_read(itf.data_read),
+    .dcache_write(itf.data_write),
+    .dcache_wdata(itf.data_wdata),
+    .dcache_mbe(itf.data_mbe)
+);
+
 /***************************** End Instantiation *****************************/
 
 endmodule

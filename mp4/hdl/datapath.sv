@@ -8,22 +8,19 @@ module datapath (
   input rst,
 
   // I-Cache
-  input icache_resp,
-  input [31:0] icache_rdata,
-  output [31:0] icache_address,
-  output icache_read,
-  output icache_write,
-  output [31:0] icache_wdata,
-  output [3:0] icache_mbe,
+  input logic icache_resp,
+  input logic [31:0] icache_rdata,
+  output logic [31:0] icache_address,
+  output logic icache_read,
 
   // D-Cache
-  input dcache_resp,
-  input [31:0] dcache_rdata,
-  output [31:0] dcache_address,
-  output dcache_read,
-  output dcache_write,
-  output [31:0] dcache_wdata,
-  output [3:0] dcache_mbe
+  input logic dcache_resp,
+  input logic [31:0] dcache_rdata,
+  output logic [31:0] dcache_address,
+  output logic dcache_read,
+  output logic dcache_write,
+  output logic [31:0] dcache_wdata,
+  output logic [3:0] dcache_mbe
 );
 
 // ******************** Internal Signals BEGIN ********************
@@ -133,9 +130,6 @@ end
 assign pcmux_sel = pcmux::pcmux_sel_t'(exmem_brreg_out);
 assign icache_address = {pcreg_out[31:2], 2'b0};
 assign icache_read = (rst) ? 1'b0 : 1'b1;
-assign icache_write = 1'b0;
-assign icache_wdata = 32'b0;
-assign icache_mbe = 4'b0;
 
 pc_register pcreg (
   .*,
@@ -222,8 +216,8 @@ always_comb begin: WDATA_LOGIC // Store instructions
 // Get exmem_alureg_out and exmem_rs2reg_out
 // Use these to then decide on what to store
 // Based on store word, we decide on how much we shift rs2
-  logic [4:0] bit_shift = '0;
-  logic [1:0] byte_shift = '0;
+  logic [4:0] bit_shift;
+  logic [1:0] byte_shift;
   store_funct3_t store_funct;
   bit_shift = exmem_alureg_out[1:0] << 3;
   byte_shift = exmem_alureg_out[1:0];
@@ -279,6 +273,7 @@ always_comb begin : LOAD_LOGIC // Load instructions
     2'b01: lb_out = {{24{memwb_memdatareg_out[15]}}, memwb_memdatareg_out[15:8]};
     2'b10: lb_out = {{24{memwb_memdatareg_out[23]}}, memwb_memdatareg_out[23:16]};
     2'b11: lb_out = {{24{memwb_memdatareg_out[31]}}, memwb_memdatareg_out[31:24]};
+    default: lb_out = 32'b0;
   endcase
 
   unique case (memwb_alureg_out[1:0])
@@ -286,6 +281,7 @@ always_comb begin : LOAD_LOGIC // Load instructions
     2'b01: lbu_out = {24'b0, memwb_memdatareg_out[15:8]};
     2'b10: lbu_out = {24'b0, memwb_memdatareg_out[23:16]};
     2'b11: lbu_out = {24'b0, memwb_memdatareg_out[31:24]};
+    default: lbu_out = 32'b0;
   endcase
 
   unique case (memwb_alureg_out[1:0])
