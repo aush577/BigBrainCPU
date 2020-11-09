@@ -4,7 +4,7 @@ module mp4(
 
   // I-Cache
   input icache_resp,
-  input icache_rdata,
+  input [31:0] icache_rdata,
   output [31:0] icache_address,
   output icache_read,
   output icache_write,
@@ -13,7 +13,7 @@ module mp4(
 
   // D-Cache
   input dcache_resp,
-  input dcache_rdata,
+  input [31:0] dcache_rdata,
   output [31:0] dcache_address,
   output dcache_read,
   output dcache_write,

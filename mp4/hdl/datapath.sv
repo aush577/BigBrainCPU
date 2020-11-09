@@ -9,7 +9,7 @@ module datapath (
 
   // I-Cache
   input icache_resp,
-  input icache_rdata,
+  input [31:0] icache_rdata,
   output [31:0] icache_address,
   output icache_read,
   output icache_write,
@@ -18,7 +18,7 @@ module datapath (
 
   // D-Cache
   input dcache_resp,
-  input dcache_rdata,
+  input [31:0] dcache_rdata,
   output [31:0] dcache_address,
   output dcache_read,
   output dcache_write,
@@ -248,39 +248,6 @@ always_comb begin: WDATA_LOGIC // Store instructions
     dcache_mbe = 4'b0000;
   end
 end
-
-// Logic for loading values
-// always_comb begin: LOAD_LOGIC // Load instructions
-//     rv32i_word mid_h;
-//     rv32i_word mid_b;
-//     rv32i_word rd_out;
-
-//     logic [3:0] reg_mask;
-
-//     case (exmem_alureg_out[1:0]):
-//       2'b00: 
-//       2'b01:
-//       2'b10:
-    // logic [1:0] shamt;
-    
-    // for (int i = 0; i < 4; i++) begin
-    //     if (reg_mask[i] == 1) begin
-    //         rd_out[8*i +: 8] = dcache_rdata[8*i +: 8];
-    //     end
-    //     else begin
-    //         rd_out[8*i +: 8] = '0;
-    //     end
-    // end
-    // shamt = dcache_address[1:0];
-    // lw_out = rd_out;
-    // mid_h = rd_out >> (8 * (shamt & 2'b10));
-    // mid_b = rd_out >> (8 * shamt);
-
-    // lh_out = {{16{mid_h[15]}}, mid_h[15:0]};
-    // lb_out = {{24{mid_b[7]}}, mid_b[7:0]};
-    // lhu_out = {16'd0, mid_h[15:0]};
-    // lbu_out = {24'd0, mid_b[7:0]};
-// end
 
 
 // ********** WB Stage **********
