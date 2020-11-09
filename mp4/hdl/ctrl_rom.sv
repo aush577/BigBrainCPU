@@ -124,7 +124,6 @@ always_comb begin
     end
     
     // op_csr: 	begin // Don't need to implement
-    // 
     // end
   
     default: begin

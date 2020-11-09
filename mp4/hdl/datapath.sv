@@ -26,10 +26,6 @@ module datapath (
   output [3:0] dcache_mbe
 );
 
-assign icache_write = 1'b0;
-assign icache_wdata = 32'b0;
-assign icache_mbe = 4'b0;
-
 // ******************** Internal Signals BEGIN ********************
 // IF
 logic [31:0] pcreg_out;
@@ -92,6 +88,7 @@ logic [31:0] lw_out;
 // Other
 pipe_ctrl_struct pipe_ctrl;
 assign pipe_ctrl = {$bits(pipe_ctrl_struct){1'b1}};
+// assign pipe_ctrl = {19{1'b1}};
 
 // ******************** Internal Signals END ********************
 
@@ -99,7 +96,7 @@ assign pipe_ctrl = {$bits(pipe_ctrl_struct){1'b1}};
 // ******************** Functions BEGIN********************
 
 // Function to decode instruction into useful pieces
-function instr_decode (logic [31:0] data);
+function instr_struct instr_decode (logic [31:0] data);
   // instr_struct coming from types.sv
   instr_struct instr;
 
@@ -135,6 +132,10 @@ end
 
 assign pcmux_sel = pcmux::pcmux_sel_t'(exmem_brreg_out);
 assign icache_address = {pcreg_out[31:2], 2'b0};
+assign icache_read = (rst) ? 1'b0 : 1'b1;
+assign icache_write = 1'b0;
+assign icache_wdata = 32'b0;
+assign icache_mbe = 4'b0;
 
 pc_register pcreg (
   .*,
@@ -197,10 +198,9 @@ cmp cmp(
 );
 
 alu alu(
-  .*, 
   .a(alumux1_out), 
   .b(alumux2_out), 
-  .aluop(idex_ctrlreg_out.aluop),  // Casting 3 bits to arith type
+  .aluop(idex_ctrlreg_out.aluop),
   .f(alu_out)
 );
 
@@ -229,24 +229,23 @@ always_comb begin: WDATA_LOGIC // Store instructions
   byte_shift = exmem_alureg_out[1:0];
   store_funct = store_funct3_t'(exmem_ireg_out.funct3);
   
-  if (exmem_ireg_out.opcode == op_store) begin
-    if (store_funct == sb) begin // sb
-      dcache_wdata = exmem_rs2reg_out << bit_shift;
-      dcache_mbe = 4'b0001 << byte_shift;
-    end
-    else if (store_funct == sh) begin // sh
-      dcache_wdata = exmem_rs2reg_out << bit_shift;
-      dcache_mbe = 4'b0011 << byte_shift;
-    end
-    else begin  // sw
-      dcache_wdata = exmem_rs2reg_out;
-      dcache_mbe = 4'b1111;
-    end
+  if (store_funct == sb) begin      // sb
+    dcache_wdata = exmem_rs2reg_out << bit_shift;
+    dcache_mbe = 4'b0001 << byte_shift;
+  end
+  else if (store_funct == sh) begin // sh
+    dcache_wdata = exmem_rs2reg_out << bit_shift;
+    dcache_mbe = 4'b0011 << byte_shift;
+  end
+  else if (store_funct == sw) begin // sw
+    dcache_wdata = exmem_rs2reg_out;
+    dcache_mbe = 4'b1111;
   end
   else begin
-    dcache_wdata = 32'b0; //Not sure about this one...
+    dcache_wdata = 32'b0;
     dcache_mbe = 4'b0000;
   end
+
 end
 
 
