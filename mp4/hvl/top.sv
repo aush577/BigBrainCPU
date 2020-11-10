@@ -17,7 +17,7 @@ source_tb tb(
 
 // For local simulation, add signal for Modelsim to display by default
 // Note that this signal does nothing and is not used for anything
-bit f;
+// bit f;
 
 /****************************** End do not touch *****************************/
 
@@ -31,7 +31,18 @@ assign rst = itf.rst;
 // This section not required until CP2
 
 assign rvfi.commit = 0; // Set high when a valid instruction is modifying regfile or PC
-assign rvfi.halt = (dut.dp.pcmux_out == dut.dp.exmem_pcreg_out);   // Set high when you detect an infinite loop
+
+logic halt;
+logic halt_temp;
+logic halt_temp2;
+assign halt = (dut.dp.pcmux_out == dut.dp.exmem_pcreg_out);
+always_ff @(posedge clk) begin
+    halt_temp <= halt;
+    halt_temp2 <= halt_temp;
+end
+assign rvfi.halt = halt_temp2;
+// assign rvfi.halt = (dut.dp.pcmux_out == dut.dp.exmem_pcreg_out);   // Set high when you detect an infinite loop
+
 initial rvfi.order = 0;
 always @(posedge itf.clk iff rvfi.commit) rvfi.order <= rvfi.order + 1; // Modify for OoO
 

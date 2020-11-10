@@ -70,6 +70,7 @@ always_comb begin
     
     op_store:	begin
       ctrl_word.dcache_write = 1'b1;
+      ctrl_word.alumux2_sel = alumux::s_imm;
     end
     
     op_imm: 	begin
