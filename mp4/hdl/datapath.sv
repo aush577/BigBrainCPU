@@ -120,7 +120,7 @@ endfunction
 
 //  ********** IF Stage **********
 always_comb begin : IF_MUXES
-  unique case (pcmux_sel)
+  unique case (pcmux_sel)   //TODO PC should be loaded with alu mod 2 on opcode jal
     pcmux::pc_plus4:  pcmux_out = pcreg_out + 4;
     pcmux::alu_out:   pcmux_out = exmem_alureg_out;
     default: `BAD_MUX_SEL;
