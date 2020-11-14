@@ -85,7 +85,6 @@ logic [31:0] lw_out;
 // Other
 pipe_ctrl_struct pipe_ctrl;
 assign pipe_ctrl = {$bits(pipe_ctrl_struct){1'b1}};
-// assign pipe_ctrl = {19{1'b1}};
 
 // ******************** Internal Signals END ********************
 
@@ -120,9 +119,9 @@ endfunction
 
 //  ********** IF Stage **********
 always_comb begin : IF_MUXES
-  unique case (pcmux_sel)   //TODO PC should be loaded with alu mod 2 on opcode jal
+  unique case (pcmux_sel)
     pcmux::pc_plus4:  pcmux_out = pcreg_out + 4;
-    pcmux::alu_out:   pcmux_out = exmem_alureg_out;
+    pcmux::alu_out:   pcmux_out = {exmem_alureg_out[31:2], 2'b0};
     default: `BAD_MUX_SEL;
   endcase
 end
@@ -303,7 +302,7 @@ end
 register #(.width($bits(instr_struct)))
 ifid_ireg (
   .*,
-  .load(pipe_ctrl.ifid_ireg_ld),
+  .load(pipe_ctrl.ifid_ld),
   .in(instr_decode(icache_rdata)),
   .out(ifid_ireg_out)
 );
@@ -311,7 +310,7 @@ ifid_ireg (
 register #(.width(32))
 ifid_pcreg (
   .*,
-  .load(pipe_ctrl.ifid_pcreg_ld),
+  .load(pipe_ctrl.ifid_ld),
   .in(pcreg_out),
   .out(ifid_pcreg_out)
 );
@@ -321,7 +320,7 @@ ifid_pcreg (
 register #(.width($bits(instr_struct)))
 idex_ireg (
   .*,
-  .load(pipe_ctrl.idex_ireg_ld),
+  .load(pipe_ctrl.idex_ld),
   .in(ifid_ireg_out),
   .out(idex_ireg_out)
 );
@@ -329,7 +328,7 @@ idex_ireg (
 register #(.width(32))
 idex_pcreg (
   .*,
-  .load(pipe_ctrl.idex_pcreg_ld),
+  .load(pipe_ctrl.idex_ld),
   .in(ifid_pcreg_out),
   .out(idex_pcreg_out)
 );
@@ -337,7 +336,7 @@ idex_pcreg (
 register #(.width(32))
 idex_rs1reg (
   .*,
-  .load(pipe_ctrl.idex_rs1reg_ld),
+  .load(pipe_ctrl.idex_ld),
   .in(regfile_rs1_out),
   .out(idex_rs1reg_out)
 );
@@ -345,7 +344,7 @@ idex_rs1reg (
 register #(.width(32))
 idex_rs2reg (
   .*,
-  .load(pipe_ctrl.idex_rs2reg_ld),
+  .load(pipe_ctrl.idex_ld),
   .in(regfile_rs2_out),
   .out(idex_rs2reg_out)
 );
@@ -353,7 +352,7 @@ idex_rs2reg (
 register #(.width($bits(ctrl_word_struct)))
 idex_ctrlreg (
   .*,
-  .load(pipe_ctrl.idex_ctrlreg_ld),
+  .load(pipe_ctrl.idex_ld),
   .in(ctrl_word_out),
   .out(idex_ctrlreg_out)
 );
@@ -363,7 +362,7 @@ idex_ctrlreg (
 register #(.width($bits(instr_struct)))
 exmem_ireg (
   .*,
-  .load(pipe_ctrl.exmem_ireg_ld),
+  .load(pipe_ctrl.exmem_ld),
   .in(idex_ireg_out),
   .out(exmem_ireg_out)
 );
@@ -371,7 +370,7 @@ exmem_ireg (
 register #(.width(32))
 exmem_pcreg (
   .*,
-  .load(pipe_ctrl.exmem_pcreg_ld),
+  .load(pipe_ctrl.exmem_ld),
   .in(idex_pcreg_out),
   .out(exmem_pcreg_out)
 );
@@ -379,7 +378,7 @@ exmem_pcreg (
 register #(.width(32))
 exmem_rs2reg (
   .*,
-  .load(pipe_ctrl.exmem_rs2reg_ld),
+  .load(pipe_ctrl.exmem_ld),
   .in(idex_rs2reg_out),
   .out(exmem_rs2reg_out)
 );
@@ -387,7 +386,7 @@ exmem_rs2reg (
 register #(.width($bits(ctrl_word_struct)))
 exmem_ctrlreg (
   .*,
-  .load(pipe_ctrl.exmem_ctrlreg_ld),
+  .load(pipe_ctrl.exmem_ld),
   .in(idex_ctrlreg_out),
   .out(exmem_ctrlreg_out)
 );
@@ -395,7 +394,7 @@ exmem_ctrlreg (
 register #(.width(32))
 exmem_alureg (
   .*,
-  .load(pipe_ctrl.exmem_alureg_ld),
+  .load(pipe_ctrl.exmem_ld),
   .in(alu_out),
   .out(exmem_alureg_out)
 );
@@ -403,7 +402,7 @@ exmem_alureg (
 register #(.width(1))
 exmem_brreg (
   .*,
-  .load(pipe_ctrl.exmem_brreg_ld),
+  .load(pipe_ctrl.exmem_ld),
   .in(br_en),
   .out(exmem_brreg_out)
 );
@@ -413,7 +412,7 @@ exmem_brreg (
 register #(.width($bits(instr_struct)))
 memwb_ireg (
   .*,
-  .load(pipe_ctrl.memwb_ireg_ld),
+  .load(pipe_ctrl.memwb_ld),
   .in(exmem_ireg_out),
   .out(memwb_ireg_out)
 );
@@ -421,7 +420,7 @@ memwb_ireg (
 register #(.width(32))
 memwb_pcreg (
   .*,
-  .load(pipe_ctrl.memwb_pcreg_ld),
+  .load(pipe_ctrl.memwb_ld),
   .in(exmem_pcreg_out),
   .out(memwb_pcreg_out)
 );
@@ -429,7 +428,7 @@ memwb_pcreg (
 register #(.width($bits(ctrl_word_struct)))
 memwb_ctrlreg (
   .*,
-  .load(pipe_ctrl.memwb_ctrlreg_ld),
+  .load(pipe_ctrl.memwb_ld),
   .in(exmem_ctrlreg_out),
   .out(memwb_ctrlreg_out)
 );
@@ -437,7 +436,7 @@ memwb_ctrlreg (
 register #(.width(32))
 memwb_alureg (
   .*,
-  .load(pipe_ctrl.memwb_alureg_ld),
+  .load(pipe_ctrl.memwb_ld),
   .in(exmem_alureg_out),
   .out(memwb_alureg_out)
 );
@@ -445,7 +444,7 @@ memwb_alureg (
 register #(.width(1))
 memwb_brreg (
   .*,
-  .load(pipe_ctrl.memwb_brreg_ld),
+  .load(pipe_ctrl.memwb_ld),
   .in(exmem_brreg_out),
   .out(memwb_brreg_out)
 );
@@ -453,7 +452,7 @@ memwb_brreg (
 register #(.width(32))
 memwb_memrdata (
   .*,
-  .load(pipe_ctrl.memwb_memdatareg_ld),
+  .load(pipe_ctrl.memwb_ld),
   .in(dcache_rdata),
   .out(memwb_memdatareg_out)
 );

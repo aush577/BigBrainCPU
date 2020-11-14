@@ -19,28 +19,33 @@ typedef struct packed {
 
 // Pipe control signals
 typedef struct packed {
-  logic ifid_ireg_ld;
-  logic ifid_pcreg_ld;
+  // logic ifid_ireg_ld;
+  // logic ifid_pcreg_ld;
 
-  logic idex_ireg_ld;
-  logic idex_pcreg_ld;
-  logic idex_rs1reg_ld;
-  logic idex_rs2reg_ld;
-  logic idex_ctrlreg_ld;
+  // logic idex_ireg_ld;
+  // logic idex_pcreg_ld;
+  // logic idex_rs1reg_ld;
+  // logic idex_rs2reg_ld;
+  // logic idex_ctrlreg_ld;
 
-  logic exmem_ireg_ld;
-  logic exmem_pcreg_ld;
-  logic exmem_rs2reg_ld;
-  logic exmem_ctrlreg_ld;
-  logic exmem_alureg_ld;
-  logic exmem_brreg_ld;
+  // logic exmem_ireg_ld;
+  // logic exmem_pcreg_ld;
+  // logic exmem_rs2reg_ld;
+  // logic exmem_ctrlreg_ld;
+  // logic exmem_alureg_ld;
+  // logic exmem_brreg_ld;
 
-  logic memwb_ireg_ld;
-  logic memwb_pcreg_ld;
-  logic memwb_ctrlreg_ld;
-  logic memwb_alureg_ld;
-  logic memwb_brreg_ld;
-  logic memwb_memdatareg_ld;
+  // logic memwb_ireg_ld;
+  // logic memwb_pcreg_ld;
+  // logic memwb_ctrlreg_ld;
+  // logic memwb_alureg_ld;
+  // logic memwb_brreg_ld;
+  // logic memwb_memdatareg_ld;
+
+  logic ifid_ld;
+  logic idex_ld;
+  logic exmem_ld;
+  logic memwb_ld;
 } pipe_ctrl_struct;
 
 // Control word signals
