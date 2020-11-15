@@ -47,4 +47,17 @@ typedef enum bit [3:0] {
     ,lh        = 4'b0111
     ,lhu       = 4'b1000  // unsigned halfword
 } regfilemux_sel_t;
+
+
+package forw_mux;
+typedef enum bit [1:0] {
+    idex_rs1_reg_out = 2'b00
+    ,idex_rs2_reg_out = 2'b01
+    ,exmem_alureg_out = 2'b10
+    ,regfile_wdata = 2'b11
+} forw_mux_sel_t;
+
+typedef enum bit [2:0] {
+
+} forwardmux2_sel_t;
 endpackage
