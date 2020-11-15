@@ -23,6 +23,10 @@ typedef struct packed {
   logic idex_ld;
   logic exmem_ld;
   logic memwb_ld;
+  logic ifid_rst;
+  logic idex_rst;
+  logic exmem_rst;
+  logic memwb_rst;
 } pipe_ctrl_struct;
 
 // Control word signals

@@ -35,7 +35,7 @@ assign rvfi.commit = 0; // Set high when a valid instruction is modifying regfil
 logic halt;
 logic halt_temp;
 logic halt_temp2;
-assign halt = (dut.dp.pcmux_out == dut.dp.exmem_pcreg_out);
+assign halt = (dut.dp.pcmux_out == dut.dp.idex_pcreg_out);
 always_ff @(posedge clk) begin
     halt_temp <= halt;
     halt_temp2 <= halt_temp;

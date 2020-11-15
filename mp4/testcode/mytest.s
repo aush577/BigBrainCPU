@@ -6,14 +6,13 @@
   # the instructions in this test program.
 _start:
    
-  lw x8, deadbeef     # x8 <= M[deadbeef]
-  nop
-  nop
-  nop
-  nop
-  nop
-  nop
-  nop
+  addi x7, x0, 7
+  addi x8, x0, 8
+  bne x0, x0, endloop
+  addi x9, x0, 9
+  addi x10, x0, 10
+  addi x11, x0, 11
+  addi x12, x0, 12
   
   # la x10, store       # x10 <= ADDR[store]
   # nop
@@ -62,13 +61,13 @@ _start:
 
 endloop:
   beq x0, x0, endloop
-  nop
-  nop
-  nop
-  nop
-  nop
-  nop
-  nop
+  # nop
+  # nop
+  # nop
+  # nop
+  # nop
+  # nop
+  # nop
 
 .section .rodata
 .balign 256
