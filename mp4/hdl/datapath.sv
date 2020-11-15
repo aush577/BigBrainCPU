@@ -82,21 +82,9 @@ logic [31:0] lh_out;
 logic [31:0] lhu_out;
 logic [31:0] lw_out;
 
-// Pipe control signals
+// Other
 pipe_ctrl_struct pipe_ctrl;
-assign pipe_ctrl = 8'b11110000;
-// assign pipe_ctrl = {$bits(pipe_ctrl_struct){1'b1}};
-assign pipe_ctrl.ifid_ld = 1'b1;
-assign pipe_ctrl.idex_ld = 1'b1;
-assign pipe_ctrl.exmem_ld = 1'b1;
-assign pipe_ctrl.memwb_ld = 1'b1;
-assign pipe_ctrl.ifid_rst = rst | flush_sig;
-assign pipe_ctrl.idex_rst = rst | flush_sig;
-assign pipe_ctrl.exmem_rst = rst;
-assign pipe_ctrl.memwb_rst = rst;
-
-logic flush_sig;
-assign flush_sig = (exmem_brreg_out == 1'b1)  // Static not taken
+assign pipe_ctrl = {$bits(pipe_ctrl_struct){1'b1}};
 
 // ******************** Internal Signals END ********************
 
@@ -314,7 +302,6 @@ end
 register #(.width($bits(instr_struct)))
 ifid_ireg (
   .*,
-  .rst(pipe_ctrl.ifid_rst),
   .load(pipe_ctrl.ifid_ld),
   .in(instr_decode(icache_rdata)),
   .out(ifid_ireg_out)
@@ -323,7 +310,6 @@ ifid_ireg (
 register #(.width(32))
 ifid_pcreg (
   .*,
-  .rst(pipe_ctrl.ifid_rst),
   .load(pipe_ctrl.ifid_ld),
   .in(pcreg_out),
   .out(ifid_pcreg_out)
@@ -334,7 +320,6 @@ ifid_pcreg (
 register #(.width($bits(instr_struct)))
 idex_ireg (
   .*,
-  .rst(pipe_ctrl.idex_rst),
   .load(pipe_ctrl.idex_ld),
   .in(ifid_ireg_out),
   .out(idex_ireg_out)
@@ -343,7 +328,6 @@ idex_ireg (
 register #(.width(32))
 idex_pcreg (
   .*,
-  .rst(pipe_ctrl.idex_rst),
   .load(pipe_ctrl.idex_ld),
   .in(ifid_pcreg_out),
   .out(idex_pcreg_out)
@@ -352,7 +336,6 @@ idex_pcreg (
 register #(.width(32))
 idex_rs1reg (
   .*,
-  .rst(pipe_ctrl.idex_rst),
   .load(pipe_ctrl.idex_ld),
   .in(regfile_rs1_out),
   .out(idex_rs1reg_out)
@@ -361,7 +344,6 @@ idex_rs1reg (
 register #(.width(32))
 idex_rs2reg (
   .*,
-  .rst(pipe_ctrl.idex_rst),
   .load(pipe_ctrl.idex_ld),
   .in(regfile_rs2_out),
   .out(idex_rs2reg_out)
@@ -370,7 +352,6 @@ idex_rs2reg (
 register #(.width($bits(ctrl_word_struct)))
 idex_ctrlreg (
   .*,
-  .rst(pipe_ctrl.idex_rst),
   .load(pipe_ctrl.idex_ld),
   .in(ctrl_word_out),
   .out(idex_ctrlreg_out)
