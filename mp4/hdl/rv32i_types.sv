@@ -7,6 +7,9 @@ import marmux::*;
 import cmpmux::*;
 import alumux::*;
 import regfilemux::*;
+import forwardmux1::*;
+import forwardmux2::*;
+import mem_forwardmux2::*;
 
 typedef logic [31:0] rv32i_word;
 typedef logic [4:0] rv32i_reg;

@@ -51,16 +51,23 @@ endpackage
 
 package forwardmux1;
 typedef enum bit [1:0] {
-    idex_rs1reg_out = 2'b00
-    ,exmem_alureg_out = 2'b01
-    ,regfilemux_out = 2'b10
+    idex_rs1 = 2'b00
+    ,exmem_alu = 2'b01
+    ,regfilemux = 2'b10
 } forwardmux1_sel_t;
 endpackage
 
 package forwardmux2;
 typedef enum bit [1:0] {
-    idex_rs2reg_out = 2'b00
-    ,exmem_alureg_out = 2'b01
-    ,regfilemux_out = 2'b10
+    idex_rs2 = 2'b00
+    ,exmem_alu = 2'b01
+    ,regfilemux = 2'b10
 } forwardmux2_sel_t;
+endpackage
+
+package mem_forwardmux2;
+typedef enum bit {
+    exmem_rs2 = 1'b0
+    ,regfilemux = 1'b1
+} mem_forwardmux2_sel_t;
 endpackage

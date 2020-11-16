@@ -56,6 +56,11 @@ logic br_signal;
 logic jal_signal;
 logic jalr_signal;
 
+forwardmux1::forwardmux1_sel_t forwardmux1_sel;
+forwardmux2::forwardmux2_sel_t forwardmux2_sel;
+logic [31:0] forwardmux1_out;
+logic [31:0] forwardmux2_out;
+
 // EX/MEM
 instr_struct exmem_ireg_out;
 logic [31:0] exmem_pcreg_out;
@@ -65,6 +70,8 @@ logic [31:0] exmem_alureg_out;
 logic exmem_brreg_out;
 
 // MEM
+mem_forwardmux2::mem_forwardmux2_sel_t mem_forwardmux2_sel;
+logic [31:0] mem_forwardmux2_out;
 
 // MEM/WB
 instr_struct memwb_ireg_out;
@@ -176,8 +183,23 @@ ctrl_rom ctrl_rom(
 
 // ********** EX Stage **********
 always_comb begin : EX_MUXES
+  unique case (forwardmux1_sel)
+    forwardmux1::idex_rs1:  forwardmux1_out = idex_rs1reg_out;
+    forwardmux1::exmem_alu: forwardmux1_out = exmem_alureg_out;
+    forwardmux1::regfilemux:   forwardmux1_out = regfilemux_out;
+    default: forwardmux1_out = idex_rs1reg_out;
+  endcase
+
+  unique case (forwardmux2_sel)
+    forwardmux2::idex_rs2:  forwardmux2_out = idex_rs2reg_out;
+    forwardmux2::exmem_alu: forwardmux2_out = exmem_alureg_out;
+    forwardmux2::regfilemux:   forwardmux2_out = regfilemux_out;
+    default: forwardmux2_out = idex_rs2reg_out;
+  endcase
+
   unique case (idex_ctrlreg_out.alumux1_sel)
-    alumux::rs1_out:	alumux1_out = idex_rs1reg_out;
+    // alumux::rs1_out:	alumux1_out = idex_rs1reg_out;
+    alumux::rs1_out:	alumux1_out = forwardmux1_out;
     alumux::pc_out:	  alumux1_out = idex_pcreg_out;
     default: `BAD_MUX_SEL;
   endcase
@@ -188,20 +210,27 @@ always_comb begin : EX_MUXES
     alumux::b_imm:		alumux2_out = idex_ireg_out.b_imm;
     alumux::s_imm:		alumux2_out = idex_ireg_out.s_imm;
     alumux::j_imm:		alumux2_out = idex_ireg_out.j_imm;
-    alumux::rs2_out:	alumux2_out = idex_rs2reg_out;
+    // alumux::rs2_out:	alumux2_out = idex_rs2reg_out;
+    alumux::rs2_out:	alumux2_out = forwardmux2_out;
     default: `BAD_MUX_SEL;
   endcase
 
   unique case (idex_ctrlreg_out.cmpmux_sel)
-    cmpmux::rs2_out:	cmpmux_out = idex_rs2reg_out;
+    // cmpmux::rs2_out:	cmpmux_out = idex_rs2reg_out;
+    cmpmux::rs2_out:	cmpmux_out = forwardmux2_out;
     cmpmux::i_imm: 	  cmpmux_out = idex_ireg_out.i_imm;
     default: `BAD_MUX_SEL;
   endcase
 end
 
+forwarding_unit forw_unit (
+  .*
+);
+
 cmp cmp(
   .cmpop(idex_ctrlreg_out.cmpop),
-  .rs1_out(idex_rs1reg_out),
+  .rs1_out(forwardmux1_out),
+  // .rs1_out(idex_rs1reg_out),
 	.cmpmux_out(cmpmux_out),
 	.br_en(br_en_cmp)
 );
@@ -223,6 +252,18 @@ end
 
 
 // ********** MEM Stage **********
+mem_forwarding_unit mem_forw_unit(
+  .*
+);
+
+always_comb begin: MEM_MUXES
+  unique case (mem_forwardmux2_sel)
+    mem_forwardmux2::exmem_rs2:   mem_forwardmux2_out = exmem_rs2reg_out;
+    mem_forwardmux2::regfilemux:  mem_forwardmux2_out = regfilemux_out;
+    default: mem_forwardmux2_out = exmem_rs2reg_out;
+  endcase
+end
+
 assign dcache_address = {exmem_alureg_out[31:2], 2'b0};
 assign dcache_read = exmem_ctrlreg_out.dcache_read;
 assign dcache_write = exmem_ctrlreg_out.dcache_write;
@@ -240,21 +281,23 @@ always_comb begin: WDATA_LOGIC // Store instructions
   
   if (store_funct == sb) begin      // sb
     dcache_wdata = exmem_rs2reg_out << bit_shift;
+    // dcache_wdata = mem_forwardmux2_out << bit_shift;
     dcache_mbe = 4'b0001 << byte_shift;
   end
   else if (store_funct == sh) begin // sh
     dcache_wdata = exmem_rs2reg_out << bit_shift;
+    // dcache_wdata = mem_forwardmux2_out << bit_shift;
     dcache_mbe = 4'b0011 << byte_shift;
   end
   else if (store_funct == sw) begin // sw
     dcache_wdata = exmem_rs2reg_out;
+    // dcache_wdata = mem_forwardmux2_out;
     dcache_mbe = 4'b1111;
   end
   else begin
     dcache_wdata = 32'b0;
     dcache_mbe = 4'b0000;
   end
-
 end
 
 
@@ -406,6 +449,7 @@ exmem_rs2reg (
   .rst(pipe_ctrl.exmem_rst),
   .load(pipe_ctrl.exmem_ld),
   .in(idex_rs2reg_out),
+  // .in(forwardmux2_out),
   .out(exmem_rs2reg_out)
 );
 
