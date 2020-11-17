@@ -54,6 +54,7 @@ typedef enum bit [1:0] {
     idex_rs1 = 2'b00
     ,exmem_alu = 2'b01
     ,regfilemux = 2'b10
+    ,mem_rdata = 2'b11
 } forwardmux1_sel_t;
 endpackage
 
@@ -62,6 +63,7 @@ typedef enum bit [1:0] {
     idex_rs2 = 2'b00
     ,exmem_alu = 2'b01
     ,regfilemux = 2'b10
+    ,mem_rdata = 2'b11
 } forwardmux2_sel_t;
 endpackage
 

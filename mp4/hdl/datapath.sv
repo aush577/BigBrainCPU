@@ -89,6 +89,9 @@ logic [31:0] lh_out;
 logic [31:0] lhu_out;
 logic [31:0] lw_out;
 
+// dCache stall
+logic dcache_stall;
+assign dcache_stall = (dcache_read | dcache_write) & ~dcache_resp;
 
 // Branch misprediction flush
 logic flush_sig;
@@ -96,11 +99,10 @@ assign flush_sig = (br_en == 1'b1);  // Static predict not taken
 
 // Pipe control signals
 pipe_ctrl_struct pipe_ctrl;
-// assign pipe_ctrl = {$bits(pipe_ctrl_struct){1'b1}};
-assign pipe_ctrl.ifid_ld = 1'b1;
-assign pipe_ctrl.idex_ld = 1'b1;
-assign pipe_ctrl.exmem_ld = 1'b1;
-assign pipe_ctrl.memwb_ld = 1'b1;
+assign pipe_ctrl.ifid_ld = ~dcache_stall;
+assign pipe_ctrl.idex_ld = ~dcache_stall;
+assign pipe_ctrl.exmem_ld = ~dcache_stall;
+assign pipe_ctrl.memwb_ld = ~dcache_stall;
 assign pipe_ctrl.ifid_rst = rst | flush_sig;
 assign pipe_ctrl.idex_rst = rst | flush_sig;
 assign pipe_ctrl.exmem_rst = rst;
@@ -155,7 +157,8 @@ assign icache_read = (rst) ? 1'b0 : 1'b1;
 
 pc_register pcreg (
   .*,
-  .load(1'b1),
+  // .load(1'b1),
+  .load(~dcache_stall),
   .in(pcmux_out),
   .out(pcreg_out)
 );
@@ -187,6 +190,7 @@ always_comb begin : EX_MUXES
     forwardmux1::idex_rs1:  forwardmux1_out = idex_rs1reg_out;
     forwardmux1::exmem_alu: forwardmux1_out = exmem_alureg_out;
     forwardmux1::regfilemux:   forwardmux1_out = regfilemux_out;
+    forwardmux1::mem_rdata: forwardmux1_out = dcache_rdata;
     default: forwardmux1_out = idex_rs1reg_out;
   endcase
 
@@ -194,6 +198,7 @@ always_comb begin : EX_MUXES
     forwardmux2::idex_rs2:  forwardmux2_out = idex_rs2reg_out;
     forwardmux2::exmem_alu: forwardmux2_out = exmem_alureg_out;
     forwardmux2::regfilemux:   forwardmux2_out = regfilemux_out;
+    forwardmux2::mem_rdata: forwardmux2_out = dcache_rdata;
     default: forwardmux2_out = idex_rs2reg_out;
   endcase
 
