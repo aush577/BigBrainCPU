@@ -24,7 +24,7 @@ always_comb begin
       && memwb_ireg_out.rd != 0
       && !(exmem_ctrlreg_out.regfile_ld
       && exmem_ireg_out.rd != 0
-      && exmem_ireg_out.rd != idex_ireg_out.rs1)
+      && exmem_ireg_out.rd == idex_ireg_out.rs1)
       && memwb_ireg_out.rd == idex_ireg_out.rs1
   ) begin
     forwardmux1_sel = forwardmux1::regfilemux;
@@ -45,7 +45,7 @@ always_comb begin
       && memwb_ireg_out.rd != 0
       && !(exmem_ctrlreg_out.regfile_ld
       && exmem_ireg_out.rd != 0
-      && exmem_ireg_out.rd != idex_ireg_out.rs2)
+      && exmem_ireg_out.rd == idex_ireg_out.rs2)
       && memwb_ireg_out.rd == idex_ireg_out.rs2
   ) begin
     forwardmux2_sel = forwardmux2::regfilemux;

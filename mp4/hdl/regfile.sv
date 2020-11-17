@@ -8,7 +8,6 @@ module regfile
     output logic [31:0] reg_a, reg_b
 );
 
-//TODO handle read/write at the same time, pass through write to output
 //logic [31:0] data [32] /* synthesis ramstyle = "logic" */ = '{default:'0};
 logic [31:0] data [32];
 
@@ -30,6 +29,14 @@ always_comb
 begin
     reg_a = src_a ? data[src_a] : 0;
     reg_b = src_b ? data[src_b] : 0;
+
+    // Read/write on same cycle
+    if (load && (dest != 0) && (src_a != 0) && (dest == src_a)) begin
+        reg_a = in;
+    end
+    if (load && (dest != 0) && (src_b != 0) && (dest == src_b)) begin
+        reg_b = in;
+    end
 end
 
 endmodule : regfile
