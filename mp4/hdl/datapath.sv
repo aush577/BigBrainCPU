@@ -93,16 +93,20 @@ logic [31:0] lw_out;
 logic dcache_stall;
 assign dcache_stall = (dcache_read | dcache_write) & ~dcache_resp;
 
+// iCache stall
+logic icache_stall;
+assign icache_stall = icache_read & ~icache_resp;
+
 // Branch misprediction flush
 logic flush_sig;
 assign flush_sig = (br_en == 1'b1);  // Static predict not taken
 
 // Pipe control signals
 pipe_ctrl_struct pipe_ctrl;
-assign pipe_ctrl.ifid_ld = ~dcache_stall;
-assign pipe_ctrl.idex_ld = ~dcache_stall;
-assign pipe_ctrl.exmem_ld = ~dcache_stall;
-assign pipe_ctrl.memwb_ld = ~dcache_stall;
+assign pipe_ctrl.ifid_ld = ~dcache_stall & ~icache_stall;
+assign pipe_ctrl.idex_ld = ~dcache_stall & ~icache_stall;
+assign pipe_ctrl.exmem_ld = ~dcache_stall & ~icache_stall;
+assign pipe_ctrl.memwb_ld = ~dcache_stall & ~icache_stall;
 assign pipe_ctrl.ifid_rst = rst | flush_sig;
 assign pipe_ctrl.idex_rst = rst | flush_sig;
 assign pipe_ctrl.exmem_rst = rst;
@@ -158,7 +162,7 @@ assign icache_read = (rst) ? 1'b0 : 1'b1;
 pc_register pcreg (
   .*,
   // .load(1'b1),
-  .load(~dcache_stall),
+  .load(~dcache_stall & ~icache_stall),
   .in(pcmux_out),
   .out(pcreg_out)
 );
@@ -285,18 +289,18 @@ always_comb begin: WDATA_LOGIC // Store instructions
   store_funct = store_funct3_t'(exmem_ireg_out.funct3);
   
   if (store_funct == sb) begin      // sb
-    dcache_wdata = exmem_rs2reg_out << bit_shift;
-    // dcache_wdata = mem_forwardmux2_out << bit_shift;
+    // dcache_wdata = exmem_rs2reg_out << bit_shift;
+    dcache_wdata = mem_forwardmux2_out << bit_shift;
     dcache_mbe = 4'b0001 << byte_shift;
   end
   else if (store_funct == sh) begin // sh
-    dcache_wdata = exmem_rs2reg_out << bit_shift;
-    // dcache_wdata = mem_forwardmux2_out << bit_shift;
+    // dcache_wdata = exmem_rs2reg_out << bit_shift;
+    dcache_wdata = mem_forwardmux2_out << bit_shift;
     dcache_mbe = 4'b0011 << byte_shift;
   end
   else if (store_funct == sw) begin // sw
-    dcache_wdata = exmem_rs2reg_out;
-    // dcache_wdata = mem_forwardmux2_out;
+    // dcache_wdata = exmem_rs2reg_out;
+    dcache_wdata = mem_forwardmux2_out;
     dcache_mbe = 4'b1111;
   end
   else begin
@@ -453,8 +457,8 @@ exmem_rs2reg (
   .*,
   .rst(pipe_ctrl.exmem_rst),
   .load(pipe_ctrl.exmem_ld),
-  .in(idex_rs2reg_out),
-  // .in(forwardmux2_out),
+  // .in(idex_rs2reg_out),
+  .in(forwardmux2_out),
   .out(exmem_rs2reg_out)
 );
 

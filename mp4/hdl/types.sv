@@ -40,7 +40,6 @@ typedef struct packed {
   logic dcache_write;
   alu_ops aluop;
   branch_funct3_t cmpop;
-
 } ctrl_word_struct;
 
 endpackage : types

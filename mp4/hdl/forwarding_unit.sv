@@ -80,13 +80,21 @@ module mem_forwarding_unit (
   output mem_forwardmux2::mem_forwardmux2_sel_t mem_forwardmux2_sel
 );
 
-// always_comb begin
-  
-// end
+always_comb begin
+  if (exmem_ireg_out.opcode == op_store 
+      && memwb_ctrlreg_out.regfile_ld == 1'b1
+      && memwb_ireg_out.rd != 0
+      && memwb_ireg_out.rd == exmem_ireg_out.rs2
+  ) begin
+    mem_forwardmux2_sel = mem_forwardmux2::regfilemux;
+  end else begin
+    mem_forwardmux2_sel = mem_forwardmux2::exmem_rs2;
+  end
+end
 
 // (No forwarding)
-always_comb begin
-  mem_forwardmux2_sel = mem_forwardmux2::exmem_rs2;
-end
+// always_comb begin
+//   mem_forwardmux2_sel = mem_forwardmux2::exmem_rs2;
+// end
 
 endmodule : mem_forwarding_unit

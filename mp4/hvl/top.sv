@@ -30,7 +30,8 @@ assign rst = itf.rst;
 /************************ Signals necessary for monitor **********************/
 // This section not required until CP2
 
-assign rvfi.commit = 0; // Set high when a valid instruction is modifying regfile or PC
+// Set high when a valid instruction is modifying regfile or PC
+assign rvfi.commit = 0; //~dut.dp.dcache_stall & ~dut.dp.dcache_stall & dut.dp.memwb_ireg_out.opcode != 0;
 
 logic halt;
 logic halt_temp;
@@ -75,6 +76,27 @@ Memory:
 Please refer to rvfi_itf.sv for more information.
 */
 
+// assign rvfi.inst        = {dut.dp.memwb_ireg_out.funct7, dut.dp.memwb_ireg_out.rs2, dut.dp.memwb_ireg_out.rs1, 
+//                            dut.dp.memwb_ireg_out.funct3, dut.dp.memwb_ireg_out.rd, dut.dp.memwb_ireg_out.opcode};
+// assign rvfi.trap =   
+
+// assign rvfi.rs1_addr    = dut.dp.memwb_ireg_out.rs1;
+// assign rvfi.rs2_addr    = dut.dp.memwb_ireg_out.rs2;
+// assign rvfi.rs1_rdata   =
+// assign rvfi.rs2_rdata   =
+// assign rvfi.load_regfile= dut.dp.memwb_ctrlreg_out.regfile_ld;
+// assign rvfi.rd_addr     = dut.dp.memwb_ireg_out.rd;
+// assign rvfi.rd_wdata    = dut.dp.regfilemux_out;
+
+// assign rvfi.pc_rdata    = dut.dp.memwb_pcreg_out;
+// assign rvfi.pc_wdata =   
+
+// assign rvfi.mem_addr  =
+// assign rvfi.mem_rmask =  
+// assign rvfi.mem_wmask =  
+// assign rvfi.mem_rdata =  
+// assign rvfi.mem_wdata =  
+
 /**************************** End RVFIMON signals ****************************/
 
 /********************* Assign Shadow Memory Signals Here *********************/
@@ -98,6 +120,19 @@ dcache signals:
 
 Please refer to tb_itf.sv for more information.
 */
+
+// assign itf.inst_read =  dut.icache_read;
+// assign itf.inst_addr =  dut.icache_address;
+// assign itf.inst_resp =  dut.icache_resp;
+// assign itf.inst_rdata = dut.icache_rdata;
+
+// assign itf.data_read =  dut.dcache_read;
+// assign itf.data_write = dut.dcache_write;
+// assign itf.data_mbe =   dut.dcache_mbe;
+// assign itf.data_addr =  dut.dcache_address;
+// assign itf.data_wdata = dut.dcache_wdata;
+// assign itf.data_resp =  dut.dcache_resp;
+// assign itf.data_rdata = dut.dcache_rdata;
 
 /*********************** End Shadow Memory Assignments ***********************/
 
@@ -126,18 +161,25 @@ mp4 dut(
     .clk(itf.clk),
     .rst(itf.rst),
 
-    .icache_resp(itf.inst_resp),
-    .icache_rdata(itf.inst_rdata),
-    .icache_address(itf.inst_addr),
-    .icache_read(itf.inst_read),
+    // .icache_resp(itf.inst_resp),
+    // .icache_rdata(itf.inst_rdata),
+    // .icache_address(itf.inst_addr),
+    // .icache_read(itf.inst_read),
 
-    .dcache_resp(itf.data_resp),
-    .dcache_rdata(itf.data_rdata),
-    .dcache_address(itf.data_addr),
-    .dcache_read(itf.data_read),
-    .dcache_write(itf.data_write),
-    .dcache_wdata(itf.data_wdata),
-    .dcache_mbe(itf.data_mbe)
+    // .dcache_resp(itf.data_resp),
+    // .dcache_rdata(itf.data_rdata),
+    // .dcache_address(itf.data_addr),
+    // .dcache_read(itf.data_read),
+    // .dcache_write(itf.data_write),
+    // .dcache_wdata(itf.data_wdata),
+    // .dcache_mbe(itf.data_mbe)
+
+    .mem_resp(itf.mem_resp),
+    .mem_rdata(itf.mem_rdata),
+    .mem_read(itf.mem_read),
+    .mem_write(itf.mem_write),
+    .mem_address(itf.mem_addr),
+    .mem_wdata(itf.mem_wdata)
 );
 
 /***************************** End Instantiation *****************************/

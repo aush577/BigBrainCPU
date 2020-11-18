@@ -1,11 +1,14 @@
 module line_adapter (
-  output logic [255:0] mem_wdata_line,
-  input logic [255:0] mem_rdata_line,
+  // CPU side
   input logic [31:0] mem_wdata,
-  output logic [31:0] mem_rdata,
   input logic [3:0] mem_byte_enable,
-  output logic [31:0] mem_byte_enable_line,
-  input logic [31:0] address
+  input logic [31:0] address,
+  output logic [31:0] mem_rdata,
+
+  // Cache side
+  input logic [255:0] mem_rdata_line,
+  output logic [255:0] mem_wdata_line,
+  output logic [31:0] mem_byte_enable_line
 );
 
 assign mem_wdata_line = {8{mem_wdata}};
