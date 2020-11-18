@@ -31,7 +31,7 @@ assign rst = itf.rst;
 // This section not required until CP2
 
 // Set high when a valid instruction is modifying regfile or PC
-assign rvfi.commit = 0; //~dut.dp.dcache_stall & ~dut.dp.dcache_stall & dut.dp.memwb_ireg_out.opcode != 0;
+assign rvfi.commit = 0;//~dut.dp.dcache_stall & ~dut.dp.icache_stall & dut.dp.memwb_ireg_out.opcode != 0;
 
 logic halt;
 logic halt_temp;
@@ -86,7 +86,7 @@ Please refer to rvfi_itf.sv for more information.
 // assign rvfi.rs2_rdata   =
 // assign rvfi.load_regfile= dut.dp.memwb_ctrlreg_out.regfile_ld;
 // assign rvfi.rd_addr     = dut.dp.memwb_ireg_out.rd;
-// assign rvfi.rd_wdata    = dut.dp.regfilemux_out;
+// assign rvfi.rd_wdata    = (dut.dp.memwb_ireg_out.rd == '0) ? 0 : dut.dp.regfilemux_out;
 
 // assign rvfi.pc_rdata    = dut.dp.memwb_pcreg_out;
 // assign rvfi.pc_wdata =   
@@ -121,18 +121,18 @@ dcache signals:
 Please refer to tb_itf.sv for more information.
 */
 
-// assign itf.inst_read =  dut.icache_read;
-// assign itf.inst_addr =  dut.icache_address;
-// assign itf.inst_resp =  dut.icache_resp;
-// assign itf.inst_rdata = dut.icache_rdata;
+assign itf.inst_read =  dut.dp.icache_read;
+assign itf.inst_addr =  dut.dp.icache_address;
+assign itf.inst_resp =  dut.dp.icache_resp;
+assign itf.inst_rdata = dut.dp.icache_rdata;
 
-// assign itf.data_read =  dut.dcache_read;
-// assign itf.data_write = dut.dcache_write;
-// assign itf.data_mbe =   dut.dcache_mbe;
-// assign itf.data_addr =  dut.dcache_address;
-// assign itf.data_wdata = dut.dcache_wdata;
-// assign itf.data_resp =  dut.dcache_resp;
-// assign itf.data_rdata = dut.dcache_rdata;
+assign itf.data_read =  dut.dp.dcache_read;
+assign itf.data_write = dut.dp.dcache_write;
+assign itf.data_mbe =   dut.dp.dcache_mbe;
+assign itf.data_addr =  dut.dp.dcache_address;
+assign itf.data_wdata = dut.dp.dcache_wdata;
+assign itf.data_resp =  dut.dp.dcache_resp;
+assign itf.data_rdata = dut.dp.dcache_rdata;
 
 /*********************** End Shadow Memory Assignments ***********************/
 

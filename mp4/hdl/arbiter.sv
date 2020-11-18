@@ -116,45 +116,6 @@ begin : next_state_logic
       end
     end
   endcase
-  /*else begin
-    unique case (state)
-
-      do_nothing: begin
-        unique casex({arb_icache_read, arb_dcache_read, arb_dcache_write, arb_mem_resp})
-          4'b100X: next_state = icache_read;
-          4'b010X: next_state = dcache_read;
-          4'b001X: next_state = dcache_write;
-          default: next_state = do_nothing;
-        endcase
-      end
-
-      dcache_read: begin
-        unique casex({arb_icache_read, arb_dcache_read, arb_dcache_write, arb_mem_resp})
-          4'bX1X0: next_state = dcache_read;
-          4'bXXX1: next_state = do_nothing;
-          default: next_state = do_nothing;
-        endcase
-      end
-
-      dcache_write: begin
-        unique casex({arb_icache_read, arb_dcache_read, arb_dcache_write, arb_mem_resp}) 
-          4'bXX10: next_state = dcache_write;
-          4'bXXX1: next_state = do_nothing;
-          default: next_state = do_nothing;
-        endcase
-      end
-
-      icache_read: begin
-        unique casex({arb_icache_read, arb_dcache_read, arb_dcache_write, arb_mem_resp})
-          4'b1XX0: next_state = icache_read;
-          4'bXXX1: next_state = do_nothing;
-          default: next_state = do_nothing;
-        endcase
-      end
-      default: next_state = do_nothing;
-    endcase
-  end
-  */
 end
 
 always_ff @(posedge clk) begin 
@@ -165,5 +126,18 @@ always_ff @(posedge clk) begin
     state <= next_state;
   end
 end
+
+// Resp logic
+// always_ff @(posedge clk) begin
+//   arb_icache_resp <= '0;
+//   arb_dcache_resp <= '0;
+//   if (arb_mem_resp) begin
+//     if (state == icache_read) begin
+//         arb_icache_resp <= '1;
+//     end else if (state == dcache_read || state == dcache_write) begin
+//         arb_dcache_resp <= '1;
+//     end
+//   end
+// end
 
 endmodule : arbiter
