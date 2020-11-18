@@ -99,7 +99,7 @@ assign icache_stall = icache_read & ~icache_resp;
 
 // Branch misprediction flush
 logic flush_sig;
-assign flush_sig = (br_en == 1'b1);  // Static predict not taken
+assign flush_sig = (br_en == 1'b1) & ~dcache_stall & ~icache_stall;  // Static predict not taken
 
 // Pipe control signals
 pipe_ctrl_struct pipe_ctrl;
