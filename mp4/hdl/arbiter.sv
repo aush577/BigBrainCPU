@@ -127,17 +127,4 @@ always_ff @(posedge clk) begin
   end
 end
 
-// Resp logic
-// always_ff @(posedge clk) begin
-//   arb_icache_resp <= '0;
-//   arb_dcache_resp <= '0;
-//   if (arb_mem_resp) begin
-//     if (state == icache_read) begin
-//         arb_icache_resp <= '1;
-//     end else if (state == dcache_read || state == dcache_write) begin
-//         arb_dcache_resp <= '1;
-//     end
-//   end
-// end
-
 endmodule : arbiter
