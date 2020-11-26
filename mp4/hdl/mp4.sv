@@ -69,8 +69,8 @@ datapath dp (
   .*
 );
 
-cache icache (
-  .clk(clk),
+new_cache icache (
+  .*,
 
   // Arbiter
   .pmem_resp(arb_icache_resp),
@@ -90,8 +90,8 @@ cache icache (
   .mem_rdata_cpu(icache_rdata)
 );
 
-cache dcache (
-  .clk(clk),
+new_cache dcache (
+  .*,
 
   // Arbiter
   .pmem_resp(arb_dcache_resp),

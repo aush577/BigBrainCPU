@@ -36,13 +36,13 @@ assign rvfi.commit = 0;//~dut.dp.dcache_stall & ~dut.dp.icache_stall & dut.dp.me
 logic halt;
 logic halt_temp;
 logic halt_temp2;
-assign halt = (dut.dp.pcmux_out == dut.dp.idex_pcreg_out);
+assign halt = (dut.dp.pcmux_out == dut.dp.idex_pcreg_out) & ~dut.dp.dcache_stall & ~dut.dp.icache_stall;
 always_ff @(posedge clk) begin
     halt_temp <= halt;
     halt_temp2 <= halt_temp;
 end
 assign rvfi.halt = halt_temp2;
-// assign rvfi.halt = (dut.dp.pcmux_out == dut.dp.exmem_pcreg_out);   // Set high when you detect an infinite loop
+// assign rvfi.halt = 1'b0;   // Set high when you detect an infinite loop
 
 initial rvfi.order = 0;
 always @(posedge itf.clk iff rvfi.commit) rvfi.order <= rvfi.order + 1; // Modify for OoO
