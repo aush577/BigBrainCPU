@@ -1,29 +1,64 @@
-module branch_history_reg #(parameter int width = 8)
+module branch_history_reg 
+#(parameter int width = 4)
+(
   input clk,
-  input check_predictor,
-  input new_branch_val,
+  input rst,
+  input bhr_ld,
+  input bhr_in,
+  
   output [width-1:0] bhr_out
 );
 
+logic [(width-1):0] data;
+assign bhr_out = data;
+
 always_ff @(posedge clk) begin
-  if (check_predictor) begin
-    bhr_out = bhr_out << 1;
-    bhr_out[0] = new_branch_val; 
+  if (rst) begin
+    data = '0;
+  end else begin
+    if (bhr_ld) begin
+      data <= data << 1;
+      data[0] <= bhr_in;
+    end else begin
+      data <= data;
+    end
   end
 end
 
 endmodule : branch_history_reg
 
-module global_branch_predictor #(parameter pc_width=3, parameter bhr_width=8) (
+
+module global_branch_predictor 
+#(parameter pc_idx_start=6, parameter pc_idx_width=4, parameter bhr_width=4) 
+(
   input clk,
-  input [(pc_width-1):0] pcreg_out,
+  input rst,
+  input glob_pred_ld,
+  input cpu_br_en,
+  input [31:0] pc,
+  
+  output pred_br_out
 );
 
-pattern_history_table pht #(.index(pc_width + bhr_width ))
-branch_history_reg bhr #(.width(bhr_width))
+logic [(bhr_width-1):0] bhr_out;
 
+pattern_history_table #(.index(pc_idx_width))
+pht (
+  .clk(clk),
+  .rst(rst),
+  .pht_index(pc[pc_idx_start : pc_idx_start-pc_idx_width-1] ^ bhr_out),
+  .pht_ld(glob_pred_ld),
+  .cpu_br_en(cpu_br_en),
+  .predicted_branch(pred_br_out)
+);
+
+branch_history_reg #(.width(bhr_width))
+bhr (
+  .clk(clk),
+  .rst(rst),
+  .bhr_ld(glob_pred_ld),
+  .bhr_in(cpu_br_en),
+  .bhr_out(bhr_out)
+);
 
 endmodule : global_branch_predictor
-
-
-

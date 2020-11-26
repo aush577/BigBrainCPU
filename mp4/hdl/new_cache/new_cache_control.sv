@@ -37,7 +37,7 @@ module new_cache_control
 
 // States
 enum int unsigned {
-	idle = 0,
+	// idle = 0,
 	checkHit = 1,
 	read = 2,
 	writeback = 3
@@ -69,9 +69,9 @@ begin
 	set_defaults();
 	unique case (state)
 	
-		idle: begin
-			// None
-		end
+		// idle: begin
+		// 	// None
+		// end
 		
 		checkHit: begin
 			if (~miss & mem_read) begin
@@ -119,27 +119,33 @@ end
 always_comb
 begin
 	if (rst) begin
-		next_state <= idle;
+		// next_state <= idle;
+		next_state <= checkHit;
 	end else begin
 		unique case (state)
 		
-			idle: begin
-				if (mem_read | mem_write) begin
-					next_state <= checkHit;
-				end else begin
-					next_state <= idle;
-				end
-			end
+			// idle: begin
+			// 	if (mem_read | mem_write) begin
+			// 		next_state <= checkHit;
+			// 	end else begin
+			// 		next_state <= idle;
+			// 	end
+			// end
 			
 			checkHit: begin
-				if (~miss) begin
-					next_state <= idle;
-				end else begin
-					if (miss & ~dirty_out) begin
-						next_state <= read;
-					end else begin	// miss & dirty_out
-						next_state <= writeback;
+				if (mem_read | mem_write) begin
+					if (~miss) begin
+						// next_state <= idle;
+						next_state <= checkHit;
+					end else begin
+						if (miss & ~dirty_out) begin
+							next_state <= read;
+						end else begin	// miss & dirty_out
+							next_state <= writeback;
+						end
 					end
+				end else begin
+					next_state <= checkHit;
 				end
 			end
 			
@@ -160,7 +166,8 @@ begin
 			end
 			
 			default: begin
-				next_state <= idle;
+				// next_state <= idle;
+				next_state <= checkHit;
 			end
 			
 		endcase
