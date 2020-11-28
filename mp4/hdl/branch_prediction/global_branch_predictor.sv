@@ -49,7 +49,7 @@ pht (
   .pht_index(pc[pc_idx_start : pc_idx_start-pc_idx_width-1] ^ bhr_out),
   .pht_ld(glob_pred_ld),
   .cpu_br_en(cpu_br_en),
-  .predicted_branch(pred_br_out)
+  .global_predicted_branch(pred_br_out)
 );
 
 branch_history_reg #(.width(bhr_width))
