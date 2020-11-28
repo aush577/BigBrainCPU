@@ -28,22 +28,36 @@ logic [width-1:0] data [num_sets-1:0] /* synthesis ramstyle = "logic" */;
 logic [width-1:0] _dataout;
 assign dataout = _dataout;
 
+initial begin
+  // for (int i = 0; i < num_sets; i++) begin
+  //   data[i] = '0;
+  // end
+  data[0] = 0;
+  data[1] = 0;
+  data[2] = 0;
+  data[3] = 0;
+  data[4] = 0;
+  data[5] = 0;
+  data[6] = 0;
+  data[7] = 0;
+end
+
 always_comb begin
   _dataout = (load & (rindex == windex)) ? datain : data[rindex];
 end
 
 always_ff @(posedge clk)
 begin
-  if (rst) begin
-    for (int i = 0; i < num_sets; ++i) begin
-      data[i] <= '0;
-    end
-  end
-  else begin
+  // if (rst) begin
+  //   for (int i = 0; i < num_sets; ++i) begin
+  //     data[i] <= '0;
+  //   end
+  // end
+  // else begin
     if (load) begin
       data[windex] <= datain;
     end
-  end
+  // end
 end
 
 endmodule : new_array
