@@ -28,10 +28,12 @@ module datapath (
 logic [31:0] pcreg_out;
 logic [31:0] pcmux_out;
 pcmux::pcmux_sel_t pcmux_sel;
+logic [31:0] pc_input;
 
 // IF/ID
 instr_struct ifid_ireg_out;
 logic [31:0] ifid_pcreg_out;
+logic ifid_btb_hit_out;
 
 // ID
 ctrl_word_struct ctrl_word_out;
@@ -44,6 +46,7 @@ logic [31:0] idex_pcreg_out;
 ctrl_word_struct idex_ctrlreg_out;
 logic [31:0] idex_rs1reg_out;
 logic [31:0] idex_rs2reg_out;
+logic idex_btb_hit_out;
 
 // EX
 logic [31:0] alumux1_out;
@@ -89,6 +92,10 @@ logic [31:0] lh_out;
 logic [31:0] lhu_out;
 logic [31:0] lw_out;
 
+// BTB
+logic btb_hit;
+logic [31:0] btb_pc_out;
+
 // dCache stall
 logic dcache_stall;
 assign dcache_stall = (dcache_read | dcache_write) & ~dcache_resp;
@@ -99,7 +106,8 @@ assign icache_stall = icache_read & ~icache_resp;
 
 // Branch misprediction flush
 logic flush_sig;
-assign flush_sig = (br_en == 1'b1) & ~dcache_stall & ~icache_stall;  // Static predict not taken
+assign flush_sig = (br_en != idex_btb_hit_out) & (idex_ireg_out.opcode == op_br) & ~dcache_stall & ~icache_stall;
+// ((br_en == 1'b1 && ifid_btb_hit_out == 1'b0) | (br_en == 1'b0 && ifid_btb_hit_out == 1'b1))
 
 // Pipe control signals
 pipe_ctrl_struct pipe_ctrl;
@@ -150,8 +158,20 @@ always_comb begin : IF_MUXES
     pcmux::pc_plus4:  pcmux_out = pcreg_out + 4;
     // pcmux::alu_out:   pcmux_out = {exmem_alureg_out[31:2], 2'b0};
     pcmux::alu_out:   pcmux_out = {alu_out[31:2], 2'b0};
+    // pcmux::alu_out:   pcmux_out = btb_hit ? btb_pc_out : {alu_out[31:2], 2'b0};
     default: `BAD_MUX_SEL;
   endcase
+
+  // Deciding between pcmux_out and btb entry
+  unique case (btb_hit & ~flush_sig)
+    1'b1: pc_input = btb_pc_out;
+    1'b0: pc_input = pcmux_out;
+    default: pc_input = pcmux_out;
+  endcase
+  // pc_input = pcmux_out;
+  // if (btb_hit == 1'b1) begin
+  //   pc_input = btb_pc_out;
+  // end
 end
 
 // assign pcmux_sel = pcmux::pcmux_sel_t'(exmem_brreg_out);
@@ -161,9 +181,9 @@ assign icache_read = (rst) ? 1'b0 : 1'b1;
 
 pc_register pcreg (
   .*,
-  // .load(1'b1),
   .load(~dcache_stall & ~icache_stall),
-  .in(pcmux_out),
+  // .in(pcmux_out),
+  .in(pc_input),
   .out(pcreg_out)
 );
 
@@ -364,6 +384,28 @@ end
 
 
 
+// ******************** Other Modules BEGIN ********************
+
+btb #(.BTB_INDEX(8), .BTB_IDX_START(9))
+btb (
+  .*,
+  .btb_load(br_en & ~dcache_stall & ~icache_stall),
+  // .pc_address_if(ifid_pcreg_out),
+  .pc_address_if(pcreg_out),
+  .pc_address_ex(idex_pcreg_out),
+  .br_address(alu_out),
+  .hit(btb_hit),
+  .predicted_pc(btb_pc_out)
+);
+
+
+
+// ******************** Other Modules END ********************
+
+
+
+
+
 // ******************** Pipeline Registers BEGIN ********************
 // ********** IF/ID Pipeline Registers **********
 // $bits returns size of struct in bits
@@ -383,6 +425,15 @@ ifid_pcreg (
   .load(pipe_ctrl.ifid_ld),
   .in(pcreg_out),
   .out(ifid_pcreg_out)
+);
+
+register #(.width(1))
+ifid_btb_hit (
+  .*,
+  .rst(pipe_ctrl.ifid_rst),
+  .load(pipe_ctrl.ifid_ld),
+  .in(btb_hit),
+  .out(ifid_btb_hit_out)
 );
 
 
@@ -432,6 +483,14 @@ idex_ctrlreg (
   .out(idex_ctrlreg_out)
 );
 
+register #(.width(1))
+idex_btb_hit (
+  .*,
+  .rst(pipe_ctrl.idex_rst),
+  .load(pipe_ctrl.idex_ld),
+  .in(ifid_btb_hit_out),
+  .out(idex_btb_hit_out)
+);
 
 // ********** EX/MEM Pipeline Registers **********
 register #(.width($bits(instr_struct)))

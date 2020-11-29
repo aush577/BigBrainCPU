@@ -6,7 +6,7 @@ module pattern_history_table
   input [index-1:0] pht_index,
   input cpu_br_en,
   input pht_ld,
-  output global_predicted_branch
+  output predicted_br
 );
 
 typedef enum bit [1:0]
@@ -19,12 +19,12 @@ typedef enum bit [1:0]
 
 pht_br_state pattern_history_table [(2**index) - 1 : 0];
 
-assign global_predicted_branch = pattern_history_table[pht_index][1];
+assign predicted_br = pattern_history_table[pht_index][1];
 
 always_ff @(posedge clk) begin  
   if (rst) begin
     for (int i=0; i < (2**index); ++i) begin
-      pattern_history_table[i] = WNT;
+      pattern_history_table[i] <= WNT;
     end
 
   end else begin

@@ -5,71 +5,21 @@
   # Refer to the RISC-V ISA Spec for the functionality of
   # the instructions in this test program.
 _start:
-   
-  addi x7, x0, 7
-  addi x8, x0, 8
-  bne x0, x0, endloop
-  addi x9, x0, 9
-  addi x10, x0, 10
-  addi x11, x0, 11
-  addi x12, x0, 12
-  
-  # la x10, store       # x10 <= ADDR[store]
-  # nop
-  # nop
-  # nop
-  # nop
-  # nop
-  # nop
-  # nop
-  
-  # sw x8, 0(x10)       # M[x10] <= x8
-  # nop
-  # nop
-  # nop
-  # nop
-  # nop
-  # nop
-  # nop
 
-  # lw x9, store        # x9 <= M[store]
-  # nop
-  # nop
-  # nop
-  # nop
-  # nop
-  # nop
-  # nop
+  and x1, x0, x0
+  and x2, x0, x0
+  and x4, x0, x0
 
-  # la x10, deadbeef
-  # lb x8, 2(x10)
-  # lhu x8, 1(x10)
+  addi x2, x2, 10
 
-  # lw x8, deadbeef
-  # la x10, store
-  # sh x8, 2(x10)
-  # lw x9, store
+  COUNTER:
+    add x1, x1, 1
+    lw x4, GOOD
+    bne x1, x2, COUNTER
 
-  # jalr x8, x0, 124
-
-  # addi x8, x0, -8
-  # addi x9, x0, 1
-  # add x10, x8, x9
-  # sub x10, x8, x9
-  # xor x10, x8, x9
-  # sra x10, x8, x9
-
-endloop:
-  beq x0, x0, endloop
-  # nop
-  # nop
-  # nop
-  # nop
-  # nop
-  # nop
-  # nop
+  endloop:
+    beq x0, x0, endloop
 
 .section .rodata
 .balign 256
-deadbeef: .word 0xdeadbeef
-store:    .word 0xabcdabcd
+GOOD:   .word 0x600D600D

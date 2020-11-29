@@ -1,12 +1,12 @@
 module tournament_predictor 
-#(parameter pc_idx_start=6, parameter pc_idx_width=4, parameter bhr_width=4)
+#(parameter pc_idx_start=6, parameter idx_width=4)
 (
   input clk,
   input rst,
-  input pc,
+  input [31:0] pc,
   input pred_ld,
-  input br_en,
-  input meta_idx,
+  input cpu_br_en,
+  // input [idx_width-1:0] meta_idx,
   
   output pred_br
 );
@@ -14,52 +14,71 @@ module tournament_predictor
 logic global_pred_br;
 logic local_pred_br;
 
-global_branch_predictor #(.pc_idx_start(pc_idx_start), .pc_idx_width(pc_idx_width), .bhr_width(bhr_width)) 
-global (
+global_branch_predictor #(.pc_idx_start(pc_idx_start), .pc_idx_width(idx_width), .bhr_width(idx_width)) 
+global_pred (
   .clk(clk),
   .rst(rst),
   .glob_pred_ld(pred_ld),
-  .cpu_br_en(br_en),
+  .cpu_br_en(cpu_br_en),
   .pc(pc),
   .pred_br_out(global_pred_br)
 );
 
-pattern_history_table #(.index(pc_idx_width)) 
-local (
+pattern_history_table #(.index(idx_width)) 
+local_pred (
   .clk(clk),
   .rst(rst),
-  .pht_index(pc[pc_idx_start : pc_idx_start-pc_idx_width-1]),
-  .cpu_br_en(br_en),
+  .pht_index(pc[pc_idx_start : pc_idx_start-idx_width+1]),
+  .cpu_br_en(cpu_br_en),
   .pht_ld(pred_ld),
-  .global_predicted_branch(local_pred_br)
+  .predicted_br(local_pred_br)
 );
 
 typedef enum bit [1:0]
 {
   use_local1 = 2'b00,
 	use_local2 = 2'b01,
-  use_gloabal1 = 2'b10,
-  use_gloabal2 = 2'b11
+  use_global1 = 2'b10,
+  use_global2 = 2'b11
 } taken_predictor;
 
-taken_predictor meta_predictor [(2**pc_idx_width) - 1 : 0];
+taken_predictor meta_predictor;
 
-assign pred_br = meta_predictor[meta_idx][1];
+assign pred_br = (meta_predictor[1]) ? global_pred_br : local_pred_br;
 
 always_ff @(posedge clk) begin  
   if (rst) begin
-    for (int i=0; i < (2**pc_idx_width); ++i) begin
-      meta_predictor[i] = use_local2;
-    end
-
+    meta_predictor = use_local2;
   end else begin
+    
     if (pred_ld) begin
-      if (cpu_br_en & (meta_predictor[meta_idx] < use_gloabal2)) begin
-        meta_predictor[meta_idx] <= meta_predictor[meta_idx] + 1;
-      end
-      else if (~cpu_br_en & (meta_predictor[meta_idx] > use_local1)) begin
-        meta_predictor[meta_idx] <= meta_predictor[meta_idx] - 1;
-      end
+      unique case ({local_pred_br, global_pred_br})
+        2'b00: begin
+          // Both predicted not taken - Do nothing
+        end
+
+        2'b01: begin
+          if (cpu_br_en && meta_predictor < use_global2)  // Global correct taken
+            meta_predictor <= meta_predictor + 1;
+          else if (~cpu_br_en && meta_predictor > use_local1)   // Local correct not taken
+            meta_predictor <= meta_predictor - 1;
+        end
+        
+        2'b10: begin
+          if (cpu_br_en && meta_predictor > use_local1)  // Local correct taken
+            meta_predictor <= meta_predictor - 1;
+          else if (~cpu_br_en && meta_predictor < use_global2)   // Global correct not taken
+            meta_predictor <= meta_predictor + 1;
+        end
+
+        2'b11: begin 
+           //Both predicted taken - Do nothing
+        end
+
+        default: begin
+          meta_predictor <= meta_predictor;
+        end
+      endcase
     end
   end
 
