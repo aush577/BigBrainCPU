@@ -109,8 +109,8 @@ assign icache_stall = icache_read & ~icache_resp;
 
 // Branch misprediction flush
 logic flush_sig;
-// assign flush_sig = (br_en == 1'b1) & ~dcache_stall & ~icache_stall; //Static not taken
-assign flush_sig = (br_en != idex_btb_hit_out) & ~dcache_stall & ~icache_stall;
+assign flush_sig = (br_en == 1'b1) & ~dcache_stall & ~icache_stall; //Static not taken
+// assign flush_sig = (br_en != idex_btb_hit_out) & ~dcache_stall & ~icache_stall;
 
 // Pipe control signals
 pipe_ctrl_struct pipe_ctrl;
@@ -166,16 +166,16 @@ always_comb begin : IF_MUXES
   endcase
 
   // Deciding between pcmux_out and btb entry
-  if ((br_en == 1'b0 && idex_btb_hit_out == 1'b1) & flush_sig) begin
-    pc_input = idex_pcreg_out + 4;  // Restoring PC after br not taken but btb expected taken
-  end else begin
-    if (btb_hit & ~flush_sig) begin
-      pc_input = btb_pc_out;
-    end else begin
-      pc_input = pcmux_out;
-    end
-  end
-  // pc_input = pcmux_out;
+  // if ((br_en == 1'b0 && idex_btb_hit_out == 1'b1) & flush_sig) begin
+  //   pc_input = idex_pcreg_out + 4;  // Restoring PC after br not taken but btb expected taken
+  // end else begin
+  //   if (btb_hit & ~flush_sig) begin
+  //     pc_input = btb_pc_out;
+  //   end else begin
+  //     pc_input = pcmux_out;
+  //   end
+  // end
+  pc_input = pcmux_out;
 
   // unique case (btb_hit & ~flush_sig)
   //   1'b1: pc_input = btb_pc_out;

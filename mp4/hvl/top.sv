@@ -31,24 +31,43 @@ assign rst = itf.rst;
 // This section not required until CP2
 
 // Set high when a valid instruction is modifying regfile or PC
-assign rvfi.commit = 0;//~dut.dp.dcache_stall & ~dut.dp.icache_stall & dut.dp.memwb_ireg_out.opcode != 0;
+// assign rvfi.commit = 0;
+assign rvfi.commit = ~dut.dp.dcache_stall & ~dut.dp.icache_stall & dut.dp.memwb_ireg_out.opcode != 0;
 
-logic halt;
-logic halt_temp;
-logic halt_temp2;
-assign halt =   (dut.dp.pc_input == dut.dp.idex_pcreg_out) 
-                & (dut.dp.idex_ireg_out.opcode == 7'b1100011 || dut.dp.idex_ireg_out.opcode == 7'b1101111 || dut.dp.idex_ireg_out.opcode == 7'b1100111)
-                & ~dut.dp.dcache_stall
-                & ~dut.dp.icache_stall;
-always_ff @(posedge clk) begin
-    halt_temp <= halt;
-    halt_temp2 <= halt_temp;
-end
-assign rvfi.halt = halt_temp2;
 // assign rvfi.halt = 1'b0;   // Set high when you detect an infinite loop
+assign rvfi.halt = rvfi.pc_rdata == rvfi.pc_wdata;
 
 initial rvfi.order = 0;
 always @(posedge itf.clk iff rvfi.commit) rvfi.order <= rvfi.order + 1; // Modify for OoO
+
+
+// Carrying forward RVFI signals from previous stages
+logic [31:0] rs1_data_delay1;
+logic [31:0] rs1_data_delay2;
+
+logic [31:0] rs2_data_delay1;
+
+logic [31:0] dcache_address_delay;
+logic [3:0] rmask_delay;
+logic [3:0] wmask_delay;
+logic [31:0] mem_wdata_delay;
+
+always_ff @(posedge clk) begin
+    if (~dut.dp.dcache_stall & ~dut.dp.icache_stall) begin
+        rs1_data_delay1 <= dut.dp.forwardmux1_out;
+        rs1_data_delay2 <= rs1_data_delay1; 
+
+        rs2_data_delay1 <= dut.dp.mem_forwardmux2_out;
+
+        dcache_address_delay <= dut.dp.dcache_address;
+
+        rmask_delay <= (dut.dp.dcache_read ? dut.dcache_mbe : '0);
+        wmask_delay <= (dut.dp.dcache_write ? dut.dcache_mbe : '0);
+
+        mem_wdata_delay <= dut.dp.dcache_wdata;
+    end
+end
+
 
 /*
 The following signals need to be set:
@@ -79,26 +98,24 @@ Memory:
 Please refer to rvfi_itf.sv for more information.
 */
 
-// assign rvfi.inst        = {dut.dp.memwb_ireg_out.funct7, dut.dp.memwb_ireg_out.rs2, dut.dp.memwb_ireg_out.rs1, 
-//                            dut.dp.memwb_ireg_out.funct3, dut.dp.memwb_ireg_out.rd, dut.dp.memwb_ireg_out.opcode};
-// assign rvfi.trap =   
+assign rvfi.inst         = {dut.dp.memwb_ireg_out.funct7, dut.dp.memwb_ireg_out.rs2, dut.dp.memwb_ireg_out.rs1, 
+                           dut.dp.memwb_ireg_out.funct3, dut.dp.memwb_ireg_out.rd, dut.dp.memwb_ireg_out.opcode};
+assign rvfi.trap         = 1'b0;
+assign rvfi.rs1_addr     = dut.dp.memwb_ireg_out.rs1;
+assign rvfi.rs2_addr     = dut.dp.memwb_ireg_out.rs2;
+assign rvfi.rs1_rdata    = rs1_data_delay2;
+assign rvfi.rs2_rdata    = rs2_data_delay1;
+assign rvfi.load_regfile = dut.dp.memwb_ctrlreg_out.regfile_ld;
+assign rvfi.rd_addr      = dut.dp.memwb_ireg_out.rd;
+assign rvfi.rd_wdata     = (dut.dp.memwb_ireg_out.rd == '0) ? 0 : dut.dp.regfilemux_out;
+assign rvfi.pc_rdata     = dut.dp.memwb_pcreg_out;
+assign rvfi.pc_wdata     = (dut.dp.memwb_brreg_out) ? {dut.dp.memwb_alureg_out[31:2], 2'b00} : dut.dp.memwb_pcreg_out + 4;
 
-// assign rvfi.rs1_addr    = dut.dp.memwb_ireg_out.rs1;
-// assign rvfi.rs2_addr    = dut.dp.memwb_ireg_out.rs2;
-// assign rvfi.rs1_rdata   =
-// assign rvfi.rs2_rdata   =
-// assign rvfi.load_regfile= dut.dp.memwb_ctrlreg_out.regfile_ld;
-// assign rvfi.rd_addr     = dut.dp.memwb_ireg_out.rd;
-// assign rvfi.rd_wdata    = (dut.dp.memwb_ireg_out.rd == '0) ? 0 : dut.dp.regfilemux_out;
-
-// assign rvfi.pc_rdata    = dut.dp.memwb_pcreg_out;
-// assign rvfi.pc_wdata =   
-
-// assign rvfi.mem_addr  =
-// assign rvfi.mem_rmask =  
-// assign rvfi.mem_wmask =  
-// assign rvfi.mem_rdata =  
-// assign rvfi.mem_wdata =  
+assign rvfi.mem_addr     = dcache_address_delay;
+assign rvfi.mem_rmask    = rmask_delay;
+assign rvfi.mem_wmask    = wmask_delay;
+assign rvfi.mem_rdata    = dut.dp.memwb_memdatareg_out;
+assign rvfi.mem_wdata    = mem_wdata_delay;
 
 /**************************** End RVFIMON signals ****************************/
 
