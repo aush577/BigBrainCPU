@@ -14,12 +14,16 @@ _start:
 
   # COUNTER:
   #   add x1, x1, 1
-  #   lw x4, GOOD
-  #   # add x4, x4, 1
+  #   lw x5, GOOD
+  #   add x4, x4, x1
   #   bne x1, x2, COUNTER
 
-  # la x1, done
-  jal x7, done
+  # lw x4, GOOD
+  # jal x7, endloop
+
+
+  la x1, done
+  jalr x7, x1
   lw x2, BAD
   lw x3, BAD
   lw x4, BAD
@@ -27,8 +31,10 @@ _start:
   done:
     lw x2, GOOD
 
+
   endloop:
     beq x0, x0, endloop
+    # jal x7, endloop
 
 .section .rodata
 .balign 256

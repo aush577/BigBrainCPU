@@ -36,7 +36,10 @@ assign rvfi.commit = 0;//~dut.dp.dcache_stall & ~dut.dp.icache_stall & dut.dp.me
 logic halt;
 logic halt_temp;
 logic halt_temp2;
-assign halt = (dut.dp.pcmux_out == dut.dp.idex_pcreg_out) & ~dut.dp.dcache_stall & ~dut.dp.icache_stall;
+assign halt =   (dut.dp.pc_input == dut.dp.idex_pcreg_out) 
+                & (dut.dp.idex_ireg_out.opcode == 7'b1100011 || dut.dp.idex_ireg_out.opcode == 7'b1101111 || dut.dp.idex_ireg_out.opcode == 7'b1100111)
+                & ~dut.dp.dcache_stall
+                & ~dut.dp.icache_stall;
 always_ff @(posedge clk) begin
     halt_temp <= halt;
     halt_temp2 <= halt_temp;

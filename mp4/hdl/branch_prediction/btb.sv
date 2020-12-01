@@ -5,6 +5,7 @@ module btb
   input clk,
   input rst,
   input logic btb_load,
+  input logic br_en,
   input logic [31:0] pc_address_if,   // PC address of instruction being fetched
   input logic [31:0] pc_address_ex,   // PC address of branch that was taken
   input logic [31:0] br_address,      // Target address computed from alu_out
@@ -26,8 +27,13 @@ assign idx_if = pc_address_if[BTB_IDX_START : BTB_IDX_START-BTB_INDEX+1];
 assign idx_ex = pc_address_ex[BTB_IDX_START : BTB_IDX_START-BTB_INDEX+1];
 
 always_comb begin
-  prediction_hit = (pc_address_if == tag[idx_if] && pred_br[idx_if] == 1'b1);  // Check tag and validity of entry
-  predicted_pc = (prediction_hit) ? data[idx_if] : 32'hDEAD;
+  if (btb_load && idx_if == idx_ex) begin   // Write-read pass through
+    prediction_hit = (pc_address_if == pc_address_ex && br_en == 1'b1);  // Check tag and validity of entry
+    predicted_pc = (prediction_hit) ? br_address : 32'hDEAD;
+  end else begin
+    prediction_hit = (pc_address_if == tag[idx_if] && pred_br[idx_if] == 1'b1);  // Check tag and validity of entry
+    predicted_pc = (prediction_hit) ? data[idx_if] : 32'hDEAD;
+  end
 end
 
 always_ff @(posedge clk) begin
@@ -41,7 +47,7 @@ always_ff @(posedge clk) begin
 
   else if (btb_load) begin
     data[idx_ex] <= br_address; 
-    pred_br[idx_ex] <= '1;
+    pred_br[idx_ex] <= br_en;
     tag[idx_ex] <= pc_address_ex;
   end
 
