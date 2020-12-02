@@ -82,6 +82,8 @@ assign hit_0 = ((tag_0_out == tag_in) & valid_0_out);
 assign hit_1 = ((tag_1_out == tag_in) & valid_1_out);
 assign miss = ~(hit_0 | hit_1);
 
+//Prefetch signals
+
 new_array #(.s_index(3), .width(1)) dirty_array_0 (
 	.*,
 	.read(1'b1),

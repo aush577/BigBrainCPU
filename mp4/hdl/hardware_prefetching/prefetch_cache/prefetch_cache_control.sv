@@ -17,6 +17,9 @@ module prefetch_cache_control
 	input logic dirty_out,
 	input logic miss,
 	input logic way,
+
+	//Prefetch
+	input logic prefetch_done,
 	
 	output logic data_in_sel,
 	output logic pmem_addr_sel,
@@ -40,7 +43,8 @@ enum int unsigned {
 	// idle = 0,
 	checkHit = 1,
 	read = 2,
-	writeback = 3
+	writeback = 3, 
+	prefetchHandle = 4,
 } state, next_state;
 
 function void set_defaults();
@@ -144,7 +148,10 @@ begin
 							next_state <= writeback;
 						end
 					end
-				end else begin
+				end else if begin
+					next_state <= prefetchHandle;
+				end
+				else begin
 					next_state <= checkHit;
 				end
 			end

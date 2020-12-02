@@ -23,6 +23,13 @@ module arbiter (
     output logic arb_mem_read,
     output logic arb_mem_write,
     output logic [255:0] arb_mem_wdata
+
+    //Prefetching
+    input logic arb_pf_read,
+    input logic arb_pf_address,
+    output logic [255:0] arb_pf_rdata,
+    output logic arb_pf_resp
+
 );
 
 assign arb_mem_wdata = arb_dcache_wdata;
@@ -31,7 +38,8 @@ enum int unsigned {
   do_nothing = 0,
   dcache_read = 1,
   dcache_write = 2,
-  icache_read = 3
+  icache_read = 3, 
+  prefetch_read = 4
 } state, next_state;
 
 function void set_defaults();
@@ -42,6 +50,7 @@ function void set_defaults();
   arb_icache_rdata = '0;
   arb_dcache_rdata = '0;
   arb_mem_address = '0;
+  arb_pf_resp = '0;
 endfunction
 
 always_comb 
@@ -72,6 +81,13 @@ begin : state_actions
       arb_icache_rdata = arb_mem_rdata;
       arb_icache_resp = arb_mem_resp;
     end
+
+    prefetch_read: begin
+      arb_mem_read = 1;
+      arb_mem_address = arb_pf_address;
+      arb_pf_rdata = arb_mem_rdata;
+      arb_pf_resp = mem_resp;
+    end
     default: set_defaults();
   endcase
 end
@@ -87,7 +103,10 @@ begin : next_state_logic
         next_state = dcache_read;
       end else if (arb_dcache_write) begin
         next_state = dcache_write;
-      end else begin
+      end else if (arb_pf_read) begin
+        next_state = prefetch_read;
+      end
+      else begin
         next_state = do_nothing;
       end
     end
@@ -111,6 +130,14 @@ begin : next_state_logic
     icache_read: begin
       if (arb_mem_resp == 1'b0) begin
         next_state = icache_read;
+      end else begin
+        next_state = do_nothing;
+      end
+    end
+
+    prefetch_read: begin
+      if (arb_mem_resp == 1'b0) begin
+        next_state = prefetch_read;
       end else begin
         next_state = do_nothing;
       end
