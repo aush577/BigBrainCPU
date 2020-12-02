@@ -63,12 +63,12 @@ always_comb begin : state_actions
     read_mem: begin
       pmem_read = 1'b1;
       writing = 2'b00;
-      // if (pmem_resp) begin
+      if (pmem_resp) begin
         tag_load = 1'b1;
         valid_load = 1'b1;
+      end
         dirty_load = 1'b1;
         dirty_in = 1'b0;
-      // end
     end
 
 	endcase

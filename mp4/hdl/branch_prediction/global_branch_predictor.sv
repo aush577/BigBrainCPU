@@ -35,7 +35,9 @@ module global_branch_predictor
   input rst,
   input glob_pred_ld,
   input cpu_br_en,
-  input [31:0] pc,
+  input [31:0] read_pc,
+  input [31:0] write_pc,
+  input [6:0] read_opcode,
   
   output predicted_br
 );
@@ -46,9 +48,11 @@ pattern_history_table #(.index(pc_idx_width))
 pht (
   .clk(clk),
   .rst(rst),
-  .pht_index(pc[pc_idx_start : pc_idx_start-pc_idx_width+1] ^ bhr_out),
+  .pht_rindex(read_pc[pc_idx_start : pc_idx_start-pc_idx_width+1] ^ bhr_out),
+  .pht_windex(write_pc[pc_idx_start : pc_idx_start-pc_idx_width+1] ^ bhr_out),
   .pht_ld(glob_pred_ld),
   .cpu_br_en(cpu_br_en),
+  .read_opcode(read_opcode),
   .predicted_br(predicted_br)
 );
 
