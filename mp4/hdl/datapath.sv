@@ -442,7 +442,7 @@ end
 
 // ******************** Branch Prediction BEGIN ********************
 
-btb #(.BTB_INDEX(6), .BTB_IDX_START(7))
+btb #(.BTB_INDEX(5), .BTB_IDX_START(6))
 btb (
   .*,
   .btb_load(
