@@ -27,13 +27,13 @@ assign idx_if = pc_address_if[BTB_IDX_START : BTB_IDX_START-BTB_INDEX+1];
 assign idx_ex = pc_address_ex[BTB_IDX_START : BTB_IDX_START-BTB_INDEX+1];
 
 always_comb begin
-  if (btb_load && idx_if == idx_ex) begin   // Write-read pass through
-    prediction_hit = (pc_address_if == pc_address_ex && br_en == 1'b1);  // Check tag and validity of entry
-    predicted_pc = (prediction_hit) ? br_address : 32'hDEAD;
-  end else begin
+  // if (btb_load && idx_if == idx_ex) begin   // Write-read pass through
+  //   prediction_hit = (pc_address_if == pc_address_ex && br_en == 1'b1);  // Check tag and validity of entry
+  //   predicted_pc = (prediction_hit) ? br_address : 32'hDEAD;
+  // end else begin
     prediction_hit = (pc_address_if == tag[idx_if] && pred_br[idx_if] == 1'b1);  // Check tag and validity of entry
     predicted_pc = (prediction_hit) ? data[idx_if] : 32'hDEAD;
-  end
+  // end
 end
 
 always_ff @(posedge clk) begin
@@ -50,8 +50,6 @@ always_ff @(posedge clk) begin
     pred_br[idx_ex] <= br_en;
     tag[idx_ex] <= pc_address_ex;
   end
-
-  // predicted_pc = prediction_hit ? data[idx_if] : 32'd0;
 end
 
 endmodule : btb

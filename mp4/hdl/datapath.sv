@@ -95,9 +95,10 @@ logic [31:0] lh_out;
 logic [31:0] lhu_out;
 logic [31:0] lw_out;
 
-// BTB
+// Branch prediction
 logic btb_hit;
 logic [31:0] btb_pc_out;
+logic pred_br;
 
 // dCache stall
 logic dcache_stall;
@@ -159,35 +160,42 @@ endfunction
 always_comb begin : IF_MUXES
   unique case (pcmux_sel)
     pcmux::pc_plus4:  pcmux_out = pcreg_out + 4;
-    // pcmux::alu_out:   pcmux_out = {exmem_alureg_out[31:2], 2'b0};
     pcmux::alu_out:   pcmux_out = {alu_out[31:2], 2'b0};
     // pcmux::alu_out:   pcmux_out = btb_hit ? btb_pc_out : {alu_out[31:2], 2'b0};
     default: `BAD_MUX_SEL;
   endcase
 
-  // Deciding between pcmux_out and btb entry
-  if ((br_en == 1'b0 && idex_btb_hit_out == 1'b1) & flush_sig) begin
-    pc_input = idex_pcreg_out + 4;  // Restoring PC after br not taken but btb expected taken
-  end else if ((br_en == 1'b1 && idex_btb_hit_out == 1'b1) & ~flush_sig) begin
-    pc_input = pcreg_out + 4;  // Restoring PC after br not taken but btb expected taken
-  end else begin
-    if (btb_hit & ~flush_sig) begin
-      pc_input = btb_pc_out;
+  // BTB / Predictor connection to pcreg
+  if (pred_br & btb_hit) begin
+    if ((br_en == 1'b1 && idex_btb_hit_out == 1'b1) && ~flush_sig) begin  // Correct prediction - execute br taken
+      pc_input = pcreg_out + 4;
+    end else if ((br_en == 1'b0 && idex_btb_hit_out == 1'b1) & flush_sig) begin    // Wrong prediction - execute br not taken
+      pc_input = idex_pcreg_out + 4;
     end else begin
-      pc_input = pcmux_out;
+      pc_input = btb_pc_out;
     end
+  end else begin
+    pc_input = pcmux_out;
   end
-  // pc_input = pcmux_out;
 
-  // unique case (btb_hit & ~flush_sig)
-  //   1'b1: pc_input = btb_pc_out;
-  //   1'b0: pc_input = pcmux_out;
-  //   default: pc_input = pcmux_out;
-  // endcase
+
+  // Deciding between pcmux_out and btb entry
+  // if ((br_en == 1'b0 && idex_btb_hit_out == 1'b1) & flush_sig) begin
+  //   pc_input = idex_pcreg_out + 4;  // Restoring PC after br not taken but btb expected taken
+  // end else if ((br_en == 1'b1 && idex_btb_hit_out == 1'b1) & ~flush_sig) begin
+  //   pc_input = pcreg_out + 4;  // Restoring PC after br taken and btb expected taken
+  // end else begin
+  //   if (btb_hit & ~flush_sig) begin
+  //     pc_input = btb_pc_out;
+  //   end else begin
+  //     pc_input = pcmux_out;
+  //   end
+  // end
+
+  // pc_input = pcmux_out;
   
 end
 
-// assign pcmux_sel = pcmux::pcmux_sel_t'(exmem_brreg_out);
 assign pcmux_sel = pcmux::pcmux_sel_t'(br_en);
 assign icache_address = {pcreg_out[31:2], 2'b0};
 assign icache_read = (rst) ? 1'b0 : 1'b1;
@@ -397,17 +405,15 @@ end
 
 
 
-// ******************** Other Modules BEGIN ********************
+// ******************** Branch Prediction BEGIN ********************
 
 btb #(.BTB_INDEX(6), .BTB_IDX_START(7))
 btb (
   .*,
-  .btb_load(
-    (idex_ireg_out.opcode == op_br || idex_ireg_out.opcode == op_jal || idex_ireg_out.opcode == op_jalr) 
-    & ~dcache_stall & ~icache_stall
-  ),
+  .btb_load(br_en),
+    // (idex_ireg_out.opcode == op_br || idex_ireg_out.opcode == op_jal || idex_ireg_out.opcode == op_jalr) 
+    // & ~dcache_stall & ~icache_stall
   .br_en(br_en),
-  // .pc_address_if(ifid_pcreg_out),
   .pc_address_if(pcreg_out),
   .pc_address_ex(idex_pcreg_out),
   .br_address(alu_out),
@@ -415,7 +421,22 @@ btb (
   .predicted_pc(btb_pc_out)
 );
 
-// ******************** Other Modules END ********************
+tournament_predictor #(.pc_idx_start(6), .idx_width(4))
+tournament (
+  .*,
+  .stall(dcache_stall | icache_stall),
+  .read_pc(pcreg_out),
+  .write_pc(idex_pcreg_out),
+  .pred_ld(
+    (idex_ireg_out.opcode == op_br || idex_ireg_out.opcode == op_jal || idex_ireg_out.opcode == op_jalr) 
+    & ~dcache_stall & ~icache_stall
+  ),
+  .cpu_br_en(br_en),
+  .read_opcode(icache_rdata[6:0]),
+  .pred_br(pred_br)
+);
+
+// ******************** Branch Prediction END ********************
 
 
 
