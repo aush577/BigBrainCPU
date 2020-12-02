@@ -68,7 +68,6 @@ always_ff @(posedge clk) begin
     end
 end
 
-
 /*
 The following signals need to be set:
 Instruction and trap:
@@ -203,5 +202,40 @@ mp4 dut(
 );
 
 /***************************** End Instantiation *****************************/
+
+
+/********** Counter Stuff **********/
+int tourn_br_pred_correct = 0;
+int tourn_br_pred_incorrect = 0;
+int total_br = 0;
+int num_flushes = 0;
+
+//buffers for counters
+logic tournament_pred_delay1;
+logic tournament_pred_delay2;
+
+always_ff @(posedge clk) begin
+    if (~dut.dp.dcache_stall & ~dut.dp.icache_stall) begin
+        tournament_pred_delay1 <= dut.dp.tournament.pred_br;
+        tournament_pred_delay2 <= tournament_pred_delay1;
+    end
+end
+
+always_ff @(posedge clk) begin
+    if ((dut.dp.idex_ireg_out.opcode == 7'b1100011) || (dut.dp.idex_ireg_out.opcode == 7'b1101111)) begin //|| (dut.dp.idex_ireg_out.opcode == 7'b1100111)) begin
+        total_br += 1;
+        if (dut.dp.br_en == tournament_pred_delay2) begin
+            tourn_br_pred_correct += 1;
+        end
+        if (dut.dp.br_en != tournament_pred_delay2) begin
+            tourn_br_pred_incorrect += 1;
+        end
+    end
+    
+    if (dut.dp.flush_sig) begin
+        num_flushes += 1;
+    end
+end
+
 
 endmodule
