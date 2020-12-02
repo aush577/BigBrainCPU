@@ -20,6 +20,10 @@ module ewb
   output ewb_address_o
 );
 
+// Control - Datapath
+logic ld_data_addr;
+logic ld_status;
+
 ewb_control ewb_control
 (
   .*
