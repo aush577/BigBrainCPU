@@ -1,4 +1,4 @@
-module prefetch_cache_control
+module new_cache_control
 (
 	input clk,
 	input rst,
@@ -17,11 +17,8 @@ module prefetch_cache_control
 	input logic dirty_out,
 	input logic miss,
 	input logic way,
-
-	//Prefetch
-	input logic prefetch_done,
 	
-	output logic data_in_sel,
+	output logic [1:0] data_in_sel,
 	output logic pmem_addr_sel,
 	output logic [1:0] wr_en_data_0_sel,
 	output logic [1:0] wr_en_data_1_sel,
@@ -35,7 +32,12 @@ module prefetch_cache_control
 	output logic ld_valid_1,
 	output logic ld_tag_0,
 	output logic ld_tag_1,
-	output logic ld_lru
+	output logic ld_lru,
+
+	//Prefetch signals
+	input logic prefetch_ready,
+	output logic prefetch_start, 
+	input logic pf_cache_way,
 );
 
 // States
@@ -44,14 +46,14 @@ enum int unsigned {
 	checkHit = 1,
 	read = 2,
 	writeback = 3, 
-	prefetchHandle = 4,
+	prefetch = 4
 } state, next_state;
 
 function void set_defaults();
 	mem_resp = 1'b0;
 	pmem_read = 1'b0;
 	pmem_write = 1'b0;
-	data_in_sel = 1'b1;
+	data_in_sel = 2'b01;
 	pmem_addr_sel = 1'b1;
 	wr_en_data_0_sel = 2'b00;
 	wr_en_data_1_sel = 2'b00;
@@ -64,6 +66,7 @@ function void set_defaults();
 	ld_tag_0 = 1'b0;
 	ld_tag_1 = 1'b0;
 	ld_lru = 1'b0;
+	prefetch_start = 1'b0;
 endfunction
 
 
@@ -83,7 +86,7 @@ begin
 				mem_resp = 1'b1;
 			end
 			if (~miss & mem_write) begin
-				data_in_sel = 1'b1;
+				data_in_sel = 2'b01;
 				if (way) begin wr_en_data_1_sel = 2'b10; end else begin wr_en_data_0_sel = 2'b10; end
 				dirty_in = 1'b1;
 				if (way) begin ld_dirty_1 = 1'b1; end else begin ld_dirty_0 = 1'b1; end
@@ -93,9 +96,10 @@ begin
 		end
 		
 		read: begin
-			data_in_sel = 1'b0;
+			data_in_sel = 2'b00;
 			pmem_addr_sel = 1'b1;
 			pmem_read = 1'b1;
+			prefetch_start = 1'b1;
 			if (pmem_resp) begin
 				if (way) begin wr_en_data_1_sel = 2'b01; end else begin wr_en_data_0_sel = 2'b01; end
 				if (way) begin ld_tag_1 = 1'b1; end else begin ld_tag_0 = 1'b1; end
@@ -109,6 +113,14 @@ begin
 			pmem_write = 1'b1;
 			dirty_in = 1'b0;
 			if (way) begin ld_dirty_1 = 1'b1; end else begin ld_dirty_0 = 1'b1; end
+		end
+
+		prefetch: begin
+			data_in_sel = 2'b11;
+			if (pf_cache_way) begin wr_en_data_1_sel = 2'b01; end else begin wr_en_data_0_sel = 2'b01; end
+			if (pf_cache_way) begin ld_tag_1 = 1'b1; end else begin ld_tag_0 = 1'b1; end
+			valid_in = 1'b1;
+			if (pf_cache_way) begin ld_valid_1 = 1'b1; end else begin ld_valid_0 = 1'b1; end
 		end
 		
 		default: begin
@@ -137,7 +149,10 @@ begin
 			// end
 			
 			checkHit: begin
-				if (mem_read | mem_write) begin
+				if (prefetch_ready) begin
+					next_state <= prefetch;
+				end
+				else if (mem_read | mem_write) begin
 					if (~miss) begin
 						// next_state <= idle;
 						next_state <= checkHit;
@@ -148,10 +163,7 @@ begin
 							next_state <= writeback;
 						end
 					end
-				end else if begin
-					next_state <= prefetchHandle;
-				end
-				else begin
+				end else begin
 					next_state <= checkHit;
 				end
 			end

@@ -1,4 +1,4 @@
-module prefetch_cache_datapath #(
+module new_cache_datapath #(
     parameter s_offset = 5,
     parameter s_index  = 3,
     parameter s_tag    = 32 - s_offset - s_index,
@@ -40,17 +40,16 @@ module prefetch_cache_datapath #(
 	
 	output logic dirty_out,
 	output logic miss,
-	output logic way,
+	output logic way, 
 
-	//Prefetcher
-	output logic prefetch_start,
-    output logic [31:0] cacheline_address,
-    output logic cache_way,
-
-    input logic [255:0] prefetch_rdata,
-    input logic prefetch_done,
+	
+	//Prefetch signals
+	input logic [255:0] prefetch_rdata,
+    input logic prefetch_ready,
     input logic pf_cline_address,
-    input logic pf_cache_way
+
+    output logic [31:0] cacheline_address,
+    output logic cache_way
 );
 
 logic [2:0] index_in;
@@ -82,7 +81,9 @@ assign hit_0 = ((tag_0_out == tag_in) & valid_0_out);
 assign hit_1 = ((tag_1_out == tag_in) & valid_1_out);
 assign miss = ~(hit_0 | hit_1);
 
-//Prefetch signals
+//Prefetch assignments
+assign cacheline_address = {tag_out, index_in, 5'b0};
+assign cache_way = way;
 
 new_array #(.s_index(3), .width(1)) dirty_array_0 (
 	.*,
@@ -207,8 +208,9 @@ always_comb begin
 	
 	// data_in mux
 	unique case (data_in_sel)
-		1'b0:	data_in = pmem_rdata;			// Load from pmem
-		1'b1:	data_in = mem_wdata256;		// Load from cpu
+		2'b00:	data_in = pmem_rdata;			// Load from pmem
+		2'b01:	data_in = mem_wdata256;		// Load from cpu
+		2'b11: data_in = prefetch_rdata;    // Load from prefetcher
 		default:	data_in = pmem_rdata;
 	endcase
 	

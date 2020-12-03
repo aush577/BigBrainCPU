@@ -6,7 +6,7 @@ module prefetcher(
     input logic cache_way,
 
     output logic [255:0] prefetch_rdata,
-    output logic prefetch_done,
+    output logic prefetch_ready,
     output logic pf_cline_address,
     output logic pf_cache_way,
 
@@ -21,14 +21,14 @@ module prefetcher(
     always_ff(@posedge clk) begin
         //In beginning: set the outputs
         if (prefetch_start) begin
-            pf_address <= cacheline_address;
-            pf_cline_address <= cacheline_address;
+            pf_address <= cacheline_address + 32;
+            pf_cline_address <= cacheline_address + 32;
             pf_read <= '1;
             pf_cache_way <= cache_way;
         end
 
         if (pf_resp) begin
-            prefetch_done <= '1;
+            prefetch_ready <= '1;
             prefetch_rdata <= pf_rdata;
         end
     end
