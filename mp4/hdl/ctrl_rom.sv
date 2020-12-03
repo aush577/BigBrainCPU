@@ -109,13 +109,13 @@ always_comb begin
         slt: begin
 					ctrl_word.cmpop = blt;
 					ctrl_word.regfilemux_sel = regfilemux::br_en;
-					ctrl_word.cmpmux_sel = cmpmux::i_imm;
+					ctrl_word.cmpmux_sel = cmpmux::rs2_out;
 				end
 				
 				sltu: begin
 					ctrl_word.cmpop = bltu;
 					ctrl_word.regfilemux_sel = regfilemux::br_en;
-					ctrl_word.cmpmux_sel = cmpmux::i_imm;		
+					ctrl_word.cmpmux_sel = cmpmux::rs2_out;
 				end
        
         sr: begin

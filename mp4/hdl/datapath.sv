@@ -233,6 +233,7 @@ always_comb begin : EX_MUXES
     forwardmux1::regfilemux:   forwardmux1_out = regfilemux_out;
     forwardmux1::mem_rdata: forwardmux1_out = load_logic_out;
     forwardmux1::mem_uimm: forwardmux1_out = exmem_ireg_out.u_imm;
+    forwardmux1::cmp_br: forwardmux1_out = exmem_brreg_out;
     default: forwardmux1_out = idex_rs1reg_out;
   endcase
 
@@ -242,6 +243,7 @@ always_comb begin : EX_MUXES
     forwardmux2::regfilemux:   forwardmux2_out = regfilemux_out;
     forwardmux2::mem_rdata: forwardmux2_out = load_logic_out;
     forwardmux2::mem_uimm: forwardmux2_out = exmem_ireg_out.u_imm;
+    forwardmux2::cmp_br: forwardmux2_out = exmem_brreg_out;
     default: forwardmux2_out = idex_rs2reg_out;
   endcase
 
@@ -605,7 +607,7 @@ exmem_brreg (
   .*,
   .rst(pipe_ctrl.exmem_rst),
   .load(pipe_ctrl.exmem_ld),
-  .in(br_en),
+  .in(br_en_cmp),   // Not jump logic
   .out(exmem_brreg_out)
 );
 

@@ -56,6 +56,7 @@ typedef enum bit [2:0] {
     ,regfilemux = 3'b010
     ,mem_rdata = 3'b011
     ,mem_uimm = 3'b100
+    ,cmp_br = 3'b101
 } forwardmux1_sel_t;
 endpackage
 
@@ -66,6 +67,7 @@ typedef enum bit [2:0] {
     ,regfilemux = 3'b010
     ,mem_rdata = 3'b011
     ,mem_uimm = 3'b100
+    ,cmp_br = 3'b101
 } forwardmux2_sel_t;
 endpackage
 
