@@ -21,16 +21,17 @@ _start:
   lw x4, GOOD
   jal x7, endloop
 
-
-  # la x1, done
-  # jalr x7, x1
-  lw x2, BAD
-  lw x3, BAD
-  lw x4, BAD
+  # temp:
+  #   la x1, done
+  #   jalr x7, x1
+    lw x2, BAD
+    lw x3, BAD
+    lw x4, BAD
+    # beq x0, x0, endloop
 
   # done:
   #  lw x2, GOOD
-
+  #  jalr x7
 
   endloop:
     beq x0, x0, endloop

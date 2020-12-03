@@ -56,14 +56,15 @@ always_comb begin
     end
     
     op_load: 	begin
-      unique case (funct3)
-        lb: ctrl_word.regfilemux_sel = regfilemux::lb;
-        lh: ctrl_word.regfilemux_sel = regfilemux::lh;
-        lw: ctrl_word.regfilemux_sel = regfilemux::lw;  // memwb_memdatareg_out
-        lbu: ctrl_word.regfilemux_sel = regfilemux::lbu;
-        lhu: ctrl_word.regfilemux_sel = regfilemux::lhu;
-        default: ctrl_word.regfilemux_sel = regfilemux::lw;  // memwb_memdatareg_out
-      endcase
+      // unique case (funct3)
+      //   lb: ctrl_word.regfilemux_sel = regfilemux::lb;
+      //   lh: ctrl_word.regfilemux_sel = regfilemux::lh;
+      //   lw: ctrl_word.regfilemux_sel = regfilemux::lw;  // memwb_memdatareg_out
+      //   lbu: ctrl_word.regfilemux_sel = regfilemux::lbu;
+      //   lhu: ctrl_word.regfilemux_sel = regfilemux::lhu;
+      //   default: ctrl_word.regfilemux_sel = regfilemux::lw;  // memwb_memdatareg_out
+      // endcase
+      ctrl_word.regfilemux_sel = regfilemux::mdr;
       ctrl_word.regfile_ld = 1'b1;
       ctrl_word.dcache_read = 1'b1;
     end
