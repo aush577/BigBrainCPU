@@ -19,6 +19,8 @@ always_comb begin
   ) begin
     if (exmem_ireg_out.opcode == op_load) begin   // MEM -> EX forwarding for loads
       forwardmux1_sel = forwardmux1::mem_rdata;
+    end else if (exmem_ireg_out.opcode == op_lui) begin
+      forwardmux1_sel = forwardmux1::mem_uimm;
     end else begin
       forwardmux1_sel = forwardmux1::exmem_alu;
     end
@@ -44,6 +46,8 @@ always_comb begin
   ) begin
     if (exmem_ireg_out.opcode == op_load) begin   // MEM -> EX forwarding for loads
       forwardmux2_sel = forwardmux2::mem_rdata;
+    end else if (exmem_ireg_out.opcode == op_lui) begin
+      forwardmux2_sel = forwardmux2::mem_uimm;
     end else begin
       forwardmux2_sel = forwardmux2::exmem_alu;
     end

@@ -40,30 +40,32 @@ typedef enum bit [3:0] {
     alu_out   = 4'b0000
     ,br_en    = 4'b0001
     ,u_imm    = 4'b0010
-    ,lw       = 4'b0011
+    ,mdr      = 4'b0011 // ,lw       = 4'b0011
     ,pc_plus4 = 4'b0100
-    ,lb        = 4'b0101
-    ,lbu       = 4'b0110  // unsigned byte
-    ,lh        = 4'b0111
-    ,lhu       = 4'b1000  // unsigned halfword
+    // ,lb        = 4'b0101
+    // ,lbu       = 4'b0110  // unsigned byte
+    // ,lh        = 4'b0111
+    // ,lhu       = 4'b1000  // unsigned halfword
 } regfilemux_sel_t;
 endpackage
 
 package forwardmux1;
-typedef enum bit [1:0] {
-    idex_rs1 = 2'b00
-    ,exmem_alu = 2'b01
-    ,regfilemux = 2'b10
-    ,mem_rdata = 2'b11
+typedef enum bit [2:0] {
+    idex_rs1 = 3'b000
+    ,exmem_alu = 3'b001
+    ,regfilemux = 3'b010
+    ,mem_rdata = 3'b011
+    ,mem_uimm = 3'b100
 } forwardmux1_sel_t;
 endpackage
 
 package forwardmux2;
-typedef enum bit [1:0] {
-    idex_rs2 = 2'b00
-    ,exmem_alu = 2'b01
-    ,regfilemux = 2'b10
-    ,mem_rdata = 2'b11
+typedef enum bit [2:0] {
+    idex_rs2 = 3'b000
+    ,exmem_alu = 3'b001
+    ,regfilemux = 3'b010
+    ,mem_rdata = 3'b011
+    ,mem_uimm = 3'b100
 } forwardmux2_sel_t;
 endpackage
 

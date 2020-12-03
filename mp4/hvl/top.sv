@@ -52,6 +52,8 @@ logic [3:0] rmask_delay;
 logic [3:0] wmask_delay;
 logic [31:0] mem_wdata_delay;
 
+logic [31:0] dcache_rdata_delay;
+
 always_ff @(posedge clk) begin
     if (~dut.dp.dcache_stall & ~dut.dp.icache_stall) begin
         rs1_data_delay1 <= dut.dp.forwardmux1_out;
@@ -61,10 +63,12 @@ always_ff @(posedge clk) begin
 
         dcache_address_delay <= dut.dp.dcache_address;
 
-        rmask_delay <= (dut.dp.dcache_read ? dut.dcache_mbe : '0);
+        rmask_delay <= (dut.dp.dcache_read ? dut.dp.load_dcache_mbe : '0);
         wmask_delay <= (dut.dp.dcache_write ? dut.dcache_mbe : '0);
 
         mem_wdata_delay <= dut.dp.dcache_wdata;
+
+        dcache_rdata_delay <= dut.dp.dcache_rdata;
     end
 end
 
@@ -113,7 +117,7 @@ assign rvfi.pc_wdata     = (dut.dp.memwb_brreg_out) ? {dut.dp.memwb_alureg_out[3
 assign rvfi.mem_addr     = dcache_address_delay;
 assign rvfi.mem_rmask    = rmask_delay;
 assign rvfi.mem_wmask    = wmask_delay;
-assign rvfi.mem_rdata    = dut.dp.memwb_memdatareg_out;
+assign rvfi.mem_rdata    = dcache_rdata_delay;
 assign rvfi.mem_wdata    = mem_wdata_delay;
 
 /**************************** End RVFIMON signals ****************************/

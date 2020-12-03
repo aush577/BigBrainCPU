@@ -78,6 +78,13 @@ logic exmem_brreg_out;
 // MEM
 mem_forwardmux2::mem_forwardmux2_sel_t mem_forwardmux2_sel;
 logic [31:0] mem_forwardmux2_out;
+logic [31:0] lb_out;
+logic [31:0] lbu_out;
+logic [31:0] lh_out;
+logic [31:0] lhu_out;
+logic [31:0] lw_out;
+logic [31:0] load_logic_out;
+logic [3:0] load_dcache_mbe;  // Not connected to anything, needed for rvfi
 
 // MEM/WB
 instr_struct memwb_ireg_out;
@@ -89,11 +96,6 @@ logic [31:0] memwb_memdatareg_out;
 
 // WB
 logic [31:0] regfilemux_out;
-logic [31:0] lb_out;
-logic [31:0] lbu_out;
-logic [31:0] lh_out;
-logic [31:0] lhu_out;
-logic [31:0] lw_out;
 
 // Branch prediction
 logic btb_hit;
@@ -188,47 +190,6 @@ always_comb begin : IF_MUXES
   end else begin
     pc_input = pcmux_out;
   end
-
-  // if ((br_en == 1'b1) & (idex_btb_take_out == 1'b1) & flush_sig) begin
-  //   pc_input = pcmux_out;
-  // end else begin
-  //   if (pred_br & btb_hit) begin
-  //     pc_input = btb_pc_out;
-  //   end else begin
-  //     pc_input = pcmux_out;
-  //   end
-  // end
-
-
-
-  // BTB / Predictor connection to pcreg
-  // if (pred_br & btb_hit) begin
-  //   if ((br_en == 1'b1 && idex_btb_take_out == 1'b1) && ~flush_sig) begin  // Correct prediction - execute br taken
-  //     pc_input = pcreg_out + 4;
-  //   end else if ((br_en == 1'b0 && idex_btb_take_out == 1'b1) & flush_sig) begin    // Wrong prediction - execute br not taken
-  //     pc_input = idex_pcreg_out + 4;
-  //   end else begin
-  //     pc_input = btb_pc_out;
-  //   end
-  // end else begin
-  //   pc_input = pcmux_out;
-  // end
-
-  // Deciding between pcmux_out and btb entry
-  // if ((br_en == 1'b0 && idex_btb_take_out == 1'b1) & flush_sig) begin
-  //   pc_input = idex_pcreg_out + 4;  // Restoring PC after br not taken but btb expected taken
-  // end else if ((br_en == 1'b1 && idex_btb_take_out == 1'b1) & ~flush_sig) begin
-  //   pc_input = pcreg_out + 4;  // Restoring PC after br taken and btb expected taken
-  // end else begin
-  //   if (btb_hit & ~flush_sig) begin
-  //     pc_input = btb_pc_out;
-  //   end else begin
-  //     pc_input = pcmux_out;
-  //   end
-  // end
-
-  // pc_input = pcmux_out;
-  
 end
 
 assign pcmux_sel = pcmux::pcmux_sel_t'(br_en);
@@ -247,7 +208,7 @@ pc_register pcreg (
 // ********** ID Stage **********
 regfile rf (
   .*, 
-  .load(memwb_ctrlreg_out.regfile_ld), 
+  .load(memwb_ctrlreg_out.regfile_ld), // && ~dcache_stall & ~icache_stall),
   .in(regfilemux_out),
   .src_a(ifid_ireg_out.rs1),
   .src_b(ifid_ireg_out.rs2), 
@@ -270,7 +231,8 @@ always_comb begin : EX_MUXES
     forwardmux1::idex_rs1:  forwardmux1_out = idex_rs1reg_out;
     forwardmux1::exmem_alu: forwardmux1_out = exmem_alureg_out;
     forwardmux1::regfilemux:   forwardmux1_out = regfilemux_out;
-    forwardmux1::mem_rdata: forwardmux1_out = dcache_rdata;
+    forwardmux1::mem_rdata: forwardmux1_out = load_logic_out;
+    forwardmux1::mem_uimm: forwardmux1_out = exmem_ireg_out.u_imm;
     default: forwardmux1_out = idex_rs1reg_out;
   endcase
 
@@ -278,7 +240,8 @@ always_comb begin : EX_MUXES
     forwardmux2::idex_rs2:  forwardmux2_out = idex_rs2reg_out;
     forwardmux2::exmem_alu: forwardmux2_out = exmem_alureg_out;
     forwardmux2::regfilemux:   forwardmux2_out = regfilemux_out;
-    forwardmux2::mem_rdata: forwardmux2_out = dcache_rdata;
+    forwardmux2::mem_rdata: forwardmux2_out = load_logic_out;
+    forwardmux2::mem_uimm: forwardmux2_out = exmem_ireg_out.u_imm;
     default: forwardmux2_out = idex_rs2reg_out;
   endcase
 
@@ -385,6 +348,68 @@ always_comb begin: WDATA_LOGIC // Store instructions
   end
 end
 
+always_comb begin : LOAD_LOGIC // Load instructions
+  logic [1:0] load_byte_shift;
+  load_funct3_t load_funct;
+  load_byte_shift = exmem_alureg_out[1:0];
+  load_funct = load_funct3_t'(exmem_ireg_out.funct3);
+
+  lw_out = dcache_rdata;
+
+  unique case (exmem_alureg_out[1:0])
+    2'b00: lh_out = {{16{dcache_rdata[15]}}, dcache_rdata[15:0]};
+    2'b10: lh_out = {{16{dcache_rdata[31]}}, dcache_rdata[31:16]};
+    default: lh_out = 32'b0;
+  endcase
+
+  unique case (exmem_alureg_out[1:0])
+    2'b00: lb_out = {{24{dcache_rdata[ 7]}}, dcache_rdata[7:0]};
+    2'b01: lb_out = {{24{dcache_rdata[15]}}, dcache_rdata[15:8]};
+    2'b10: lb_out = {{24{dcache_rdata[23]}}, dcache_rdata[23:16]};
+    2'b11: lb_out = {{24{dcache_rdata[31]}}, dcache_rdata[31:24]};
+    default: lb_out = 32'b0;
+  endcase
+
+  unique case (exmem_alureg_out[1:0])
+    2'b00: lbu_out = {24'b0, dcache_rdata[7:0]};
+    2'b01: lbu_out = {24'b0, dcache_rdata[15:8]};
+    2'b10: lbu_out = {24'b0, dcache_rdata[23:16]};
+    2'b11: lbu_out = {24'b0, dcache_rdata[31:24]};
+    default: lbu_out = 32'b0;
+  endcase
+
+  unique case (exmem_alureg_out[1:0])
+    2'b00: lhu_out = {16'b0, dcache_rdata[15:0]};
+    2'b10: lhu_out = {16'b0, dcache_rdata[31:16]};
+    default: lhu_out = 32'b0;
+  endcase
+  
+  
+  load_dcache_mbe = (exmem_ireg_out.opcode == op_load) ? 4'b1111 : 4'b0000;
+
+  if (load_funct == lb) begin
+    load_logic_out = lb_out;
+    // load_dcache_mbe = 4'b0001 << load_byte_shift;
+  end else if (load_funct == lbu) begin
+    load_logic_out = lbu_out;
+    // load_dcache_mbe = 4'b0001 << load_byte_shift;
+  end else if (load_funct == lh) begin
+    load_logic_out = lh_out;
+    // load_dcache_mbe = 4'b0011 << load_byte_shift;
+  end else if (load_funct == lhu) begin
+    load_logic_out = lhu_out;
+    // load_dcache_mbe = 4'b0011 << load_byte_shift;
+  end else if (load_funct == lw) begin
+    load_logic_out = lw_out;
+    // load_dcache_mbe = 4'b1111;
+  end else begin
+    load_logic_out = lw_out;
+    // load_dcache_mbe = 4'b0000;
+  end
+
+end
+
+
 
 // ********** WB Stage **********
 always_comb begin : WB_MUXES
@@ -393,44 +418,8 @@ always_comb begin : WB_MUXES
     regfilemux::u_imm: regfilemux_out = memwb_ireg_out.u_imm;
     regfilemux::pc_plus4: regfilemux_out = memwb_pcreg_out + 4;
     regfilemux::br_en: regfilemux_out = {31'd0, memwb_brreg_out};
-    regfilemux::lw: regfilemux_out = lw_out;  // memwb_memdatareg_out
-    regfilemux::lh: regfilemux_out = lh_out;
-    regfilemux::lb: regfilemux_out = lb_out;
-    regfilemux::lbu: regfilemux_out = lbu_out;
-    regfilemux::lhu: regfilemux_out  = lhu_out;
+    regfilemux::mdr: regfilemux_out = memwb_memdatareg_out;
     default: `BAD_MUX_SEL;
-  endcase
-end
-
-always_comb begin : LOAD_LOGIC // Load instructions
-  lw_out = memwb_memdatareg_out;
-
-  unique case (memwb_alureg_out[1:0])
-    2'b00: lh_out = {{16{memwb_memdatareg_out[15]}}, memwb_memdatareg_out[15:0]};
-    2'b10: lh_out = {{16{memwb_memdatareg_out[31]}}, memwb_memdatareg_out[31:16]};
-    default: lh_out = 32'b0;
-  endcase
-
-  unique case (memwb_alureg_out[1:0])
-    2'b00: lb_out = {{24{memwb_memdatareg_out[ 7]}}, memwb_memdatareg_out[7:0]};
-    2'b01: lb_out = {{24{memwb_memdatareg_out[15]}}, memwb_memdatareg_out[15:8]};
-    2'b10: lb_out = {{24{memwb_memdatareg_out[23]}}, memwb_memdatareg_out[23:16]};
-    2'b11: lb_out = {{24{memwb_memdatareg_out[31]}}, memwb_memdatareg_out[31:24]};
-    default: lb_out = 32'b0;
-  endcase
-
-  unique case (memwb_alureg_out[1:0])
-    2'b00: lbu_out = {24'b0, memwb_memdatareg_out[7:0]};
-    2'b01: lbu_out = {24'b0, memwb_memdatareg_out[15:8]};
-    2'b10: lbu_out = {24'b0, memwb_memdatareg_out[23:16]};
-    2'b11: lbu_out = {24'b0, memwb_memdatareg_out[31:24]};
-    default: lbu_out = 32'b0;
-  endcase
-
-  unique case (memwb_alureg_out[1:0])
-    2'b00: lhu_out = {16'b0, memwb_memdatareg_out[15:0]};
-    2'b10: lhu_out = {16'b0, memwb_memdatareg_out[31:16]};
-    default: lhu_out = 32'b0;
   endcase
 end
 
@@ -672,7 +661,7 @@ memwb_memrdata (
   .*,
   .rst(pipe_ctrl.memwb_rst),
   .load(pipe_ctrl.memwb_ld),
-  .in(dcache_rdata),
+  .in(load_logic_out),
   .out(memwb_memdatareg_out)
 );
 
