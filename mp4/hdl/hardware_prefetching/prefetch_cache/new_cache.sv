@@ -38,7 +38,7 @@ logic [31:0] mem_byte_enable256;
 logic dirty_out;
 logic miss;
 logic way;
-logic data_in_sel;
+logic [1:0] data_in_sel;
 logic pmem_addr_sel;
 logic [1:0] wr_en_data_0_sel;
 logic [1:0] wr_en_data_1_sel;
@@ -51,6 +51,9 @@ logic ld_valid_1;
 logic ld_tag_0;
 logic ld_tag_1;
 logic ld_lru;
+
+//Prefetching
+logic index_sel;
 
 new_cache_control control
 (

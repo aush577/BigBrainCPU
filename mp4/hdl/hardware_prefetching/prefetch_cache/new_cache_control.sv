@@ -38,6 +38,8 @@ module new_cache_control
 	input logic prefetch_ready,
 	output logic prefetch_start, 
 	input logic pf_cache_way,
+	output logic index_sel, 
+	output logic tag_sel
 );
 
 // States
@@ -67,6 +69,8 @@ function void set_defaults();
 	ld_tag_1 = 1'b0;
 	ld_lru = 1'b0;
 	prefetch_start = 1'b0;
+	index_sel = 1'b0;
+	tag_sel = 1'b0;
 endfunction
 
 
@@ -117,6 +121,8 @@ begin
 
 		prefetch: begin
 			data_in_sel = 2'b11;
+			index_sel = 1'b1;
+			tag_sel = 1'b1;
 			if (pf_cache_way) begin wr_en_data_1_sel = 2'b01; end else begin wr_en_data_0_sel = 2'b01; end
 			if (pf_cache_way) begin ld_tag_1 = 1'b1; end else begin ld_tag_0 = 1'b1; end
 			valid_in = 1'b1;

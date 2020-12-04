@@ -19,6 +19,7 @@ module prefetcher(
     //transfer the data to the arbiter ports, 
     //then once we get the output, transfer it back to the cache
     always_ff(@posedge clk) begin
+        prefetch_ready <= '0;
         //In beginning: set the outputs
         if (prefetch_start) begin
             pf_address <= cacheline_address + 32;

@@ -22,7 +22,7 @@ module new_cache_datapath #(
 	output logic [255:0] pmem_wdata,
 	
 	// Control
-	input logic data_in_sel,
+	input logic [1:0] data_in_sel,
 	input logic pmem_addr_sel,
 	input logic [1:0] wr_en_data_0_sel,
 	input logic [1:0] wr_en_data_1_sel,
@@ -49,14 +49,28 @@ module new_cache_datapath #(
     input logic pf_cline_address,
 
     output logic [31:0] cacheline_address,
-    output logic cache_way
+    output logic cache_way, 
+
+	//Prefetch support signals
+	input logic index_sel, 
+	input logic tag_sel
 );
 
 logic [2:0] index_in;
+logic [2:0] addr_index;
+logic [2:0] pf_index;
+
+assign addr_index = mem_address[7:5];
+assign pf_index = pf_cline_address[7:5];
+
 assign index_in = mem_address[7:5];
 
 logic [23:0] tag_in;
-assign tag_in = mem_address[31:8];
+logic [23:0] mem_tag_in;
+logic [23:0] pf_tag_in;
+
+assign mem_tag_in = mem_address[31:8];
+assign prefetch_tag_in = pf_cline_address[31:8];
 
 logic dirty_0_out, dirty_1_out;
 
@@ -235,6 +249,18 @@ always_comb begin
 		2'b01:	wr_en_data_1 = 32'hFFFFFFFF;
 		2'b10:	wr_en_data_1 = mem_byte_enable256;
 		default:	wr_en_data_1 = 32'h00000000;
+	endcase
+
+	//prefetch index
+	unique case (index_sel)
+		1'b0: index_in = addr_index;
+		1'b1: index_in = pf_index;
+	endcase
+
+	//prefetch tag
+	unique case (tag_sel)
+		1'b0: tag_in = mem_tag_in;
+		1'b1: tag_in = pf_tag_in;
 	endcase
 	
 end
