@@ -134,7 +134,7 @@ new_cache #(.s_offset(5), .s_index(3)) dcache (
   .mem_rdata_cpu(dcache_rdata)
 );
 
-arbiter arbiter (
+prefetch_arbiter arbiter (
   .*
 );
 
@@ -181,8 +181,7 @@ cacheline_adaptor cacheline_adaptor (
 
 
 prefetcher pf(.*, 
-.pf_rdata(arb_pf_rdata), 
-.pf_cline_address(arb_pf_address),
+.pf_rdata(arb_pf_rdata),
 .pf_read(arb_pf_read), 
 .pf_resp(arb_pf_resp), 
 .pf_address(arb_pf_address)

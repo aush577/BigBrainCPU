@@ -50,6 +50,7 @@ function void set_defaults();
   arb_icache_rdata = '0;
   arb_dcache_rdata = '0;
   arb_mem_address = '0;
+  arb_pf_rdata = '0;
   arb_pf_resp = '0;
 endfunction
 

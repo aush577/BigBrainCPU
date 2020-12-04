@@ -63,8 +63,6 @@ logic [2:0] pf_index;
 assign addr_index = mem_address[7:5];
 assign pf_index = pf_cline_address[7:5];
 
-assign index_in = mem_address[7:5];
-
 logic [23:0] tag_in;
 logic [23:0] mem_tag_in;
 logic [23:0] pf_tag_in;

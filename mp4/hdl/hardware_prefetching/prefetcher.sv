@@ -7,11 +7,11 @@ module prefetcher(
 
     output logic [255:0] prefetch_rdata,
     output logic prefetch_ready,
-    output logic pf_cline_address,
+    output logic [31:0] pf_cline_address,
     output logic pf_cache_way,
 
     output logic pf_read,
-    output logic pf_address,
+    output logic [31:0] pf_address,
     input logic [255:0] pf_rdata,
     input logic pf_resp
 );
