@@ -1,4 +1,4 @@
-module new_cache #(
+module prefetch_cache #(
     parameter s_offset = 5,
     parameter s_index  = 3,
     parameter s_tag    = 32 - s_offset - s_index,
@@ -25,7 +25,7 @@ module new_cache #(
 	output pmem_read,
 	output pmem_write,
 	output [255:0] pmem_wdata,
-	output [31:0] pmem_address
+	output [31:0] pmem_address,
 
 	//Prefetcher
 	output logic prefetch_start,
@@ -64,13 +64,14 @@ logic ld_lru;
 
 //Prefetching
 logic index_sel;
+logic tag_sel;
 
-new_cache_control control
+prefetch_cache_control control
 (
 	.*
 );
 
-new_cache_datapath datapath
+prefetch_cache_datapath datapath
 (
 	.*
 );

@@ -1,4 +1,4 @@
-module new_cache_control
+module prefetch_cache_control
 (
 	input clk,
 	input rst,

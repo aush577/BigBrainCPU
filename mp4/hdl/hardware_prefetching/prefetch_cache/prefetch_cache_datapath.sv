@@ -70,7 +70,7 @@ logic [23:0] mem_tag_in;
 logic [23:0] pf_tag_in;
 
 assign mem_tag_in = mem_address[31:8];
-assign prefetch_tag_in = pf_cline_address[31:8];
+assign pf_tag_in = pf_cline_address[31:8];
 
 logic dirty_0_out, dirty_1_out;
 

@@ -22,8 +22,8 @@ module prefetcher(
         prefetch_ready <= '0;
         //In beginning: set the outputs
         if (prefetch_start) begin
-            pf_address <= cacheline_address + 32;
-            pf_cline_address <= cacheline_address + 32;
+            pf_address <= cacheline_address + 32'd32;
+            pf_cline_address <= cacheline_address + 32'd32;
             pf_read <= '1;
             pf_cache_way <= cache_way;
         end
