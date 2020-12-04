@@ -35,7 +35,7 @@ assign rst = itf.rst;
 assign rvfi.commit = ~dut.dp.dcache_stall & ~dut.dp.icache_stall & dut.dp.memwb_ireg_out.opcode != 0;
 
 // assign rvfi.halt = 1'b0;   // Set high when you detect an infinite loop
-assign rvfi.halt = rvfi.pc_rdata == rvfi.pc_wdata;
+assign rvfi.halt = (rvfi.pc_rdata == rvfi.pc_wdata) & rvfi.commit;
 
 initial rvfi.order = 0;
 always @(posedge itf.clk iff rvfi.commit) rvfi.order <= rvfi.order + 1; // Modify for OoO
@@ -54,6 +54,9 @@ logic [31:0] mem_wdata_delay;
 
 logic [31:0] dcache_rdata_delay;
 
+logic br_taken_delay1;
+logic br_taken_delay2;
+
 always_ff @(posedge clk) begin
     if (~dut.dp.dcache_stall & ~dut.dp.icache_stall) begin
         rs1_data_delay1 <= dut.dp.forwardmux1_out;
@@ -69,6 +72,9 @@ always_ff @(posedge clk) begin
         mem_wdata_delay <= dut.dp.dcache_wdata;
 
         dcache_rdata_delay <= dut.dp.dcache_rdata;
+
+        br_taken_delay1 <= dut.dp.br_en;
+        br_taken_delay2 <= br_taken_delay1;
     end
 end
 
@@ -112,7 +118,7 @@ assign rvfi.load_regfile = dut.dp.memwb_ctrlreg_out.regfile_ld;
 assign rvfi.rd_addr      = dut.dp.memwb_ireg_out.rd;
 assign rvfi.rd_wdata     = (dut.dp.memwb_ireg_out.rd == '0) ? 0 : dut.dp.regfilemux_out;
 assign rvfi.pc_rdata     = dut.dp.memwb_pcreg_out;
-assign rvfi.pc_wdata     = (dut.dp.memwb_brreg_out) ? {dut.dp.memwb_alureg_out[31:2], 2'b00} : dut.dp.memwb_pcreg_out + 4;
+assign rvfi.pc_wdata     = (br_taken_delay2) ? {dut.dp.memwb_alureg_out[31:2], 2'b00} : dut.dp.memwb_pcreg_out + 4;
 
 assign rvfi.mem_addr     = dcache_address_delay;
 assign rvfi.mem_rmask    = rmask_delay;

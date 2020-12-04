@@ -1,4 +1,4 @@
-module new_cache_datapath #(
+module prefetch_cache_datapath #(
     parameter s_offset = 5,
     parameter s_index  = 3,
     parameter s_tag    = 32 - s_offset - s_index,

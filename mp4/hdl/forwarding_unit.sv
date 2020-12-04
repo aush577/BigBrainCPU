@@ -21,6 +21,8 @@ always_comb begin
       forwardmux1_sel = forwardmux1::mem_rdata;
     end else if (exmem_ireg_out.opcode == op_lui) begin
       forwardmux1_sel = forwardmux1::mem_uimm;
+    end else if ((exmem_ireg_out.opcode == op_imm || exmem_ireg_out.opcode == op_reg) && (exmem_ireg_out.funct3 == 3'b010 || exmem_ireg_out.funct3 == 3'b011)) begin   //SLTI SLTIU SLT SLTU
+      forwardmux1_sel = forwardmux1::cmp_br;
     end else begin
       forwardmux1_sel = forwardmux1::exmem_alu;
     end
@@ -48,6 +50,8 @@ always_comb begin
       forwardmux2_sel = forwardmux2::mem_rdata;
     end else if (exmem_ireg_out.opcode == op_lui) begin
       forwardmux2_sel = forwardmux2::mem_uimm;
+    end else if ((exmem_ireg_out.opcode == op_imm || exmem_ireg_out.opcode == op_reg) && (exmem_ireg_out.funct3 == 3'b010 || exmem_ireg_out.funct3 == 3'b011)) begin   //SLTI SLTIU SLT SLTU
+      forwardmux2_sel = forwardmux2::cmp_br;
     end else begin
       forwardmux2_sel = forwardmux2::exmem_alu;
     end
