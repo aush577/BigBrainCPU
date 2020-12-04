@@ -46,7 +46,7 @@ module prefetch_cache_datapath #(
 	//Prefetch signals
 	input logic [255:0] prefetch_rdata,
     input logic prefetch_ready,
-    input logic [31:0] pf_cline_address,
+    input logic pf_cline_address,
 
     output logic [31:0] cacheline_address,
     output logic cache_way, 

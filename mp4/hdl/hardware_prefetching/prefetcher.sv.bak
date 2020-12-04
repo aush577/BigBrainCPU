@@ -18,7 +18,7 @@ module prefetcher(
     //goal is simple: we get address from memory, 
     //transfer the data to the arbiter ports, 
     //then once we get the output, transfer it back to the cache
-    always_ff @ (posedge clk) begin
+    always_ff(@posedge clk) begin
         prefetch_ready <= '0;
         //In beginning: set the outputs
         if (prefetch_start) begin

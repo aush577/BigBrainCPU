@@ -34,7 +34,7 @@ module prefetch_cache #(
 
     input logic [255:0] prefetch_rdata,
     input logic prefetch_ready,
-    input logic [31:0] pf_cline_address,
+    input logic pf_cline_address,
     input logic pf_cache_way
 );
 
@@ -85,4 +85,4 @@ new_bus_adapter bus_adapter
 	.address(mem_address)
 );
 
-endmodule : prefetch_cache
+endmodule : new_cache

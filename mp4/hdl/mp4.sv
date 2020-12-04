@@ -72,14 +72,15 @@ logic cache_way;
 
 logic [255:0] prefetch_rdata;
 logic prefetch_ready;
-logic pf_cline_addres;
+logic [31:0] pf_cline_address;
 logic pf_cache_way;
 
+
 //Prefetcher <-> Arbiter
-logic arb_pf_read,
-logic arb_pf_address,
-logic [255:0] arb_pf_rdata,
-logic arb_pf_resp
+logic arb_pf_read;
+logic arb_pf_address;
+logic [255:0] arb_pf_rdata;
+logic arb_pf_resp;
 
 // EWB <-> Cacheline Adapter
 logic [255:0] ewb_rdata_i;
@@ -93,7 +94,7 @@ datapath dp (
   .*
 );
 
-new_cache #(.s_offset(5), .s_index(3)) icache (
+prefetch_cache #(.s_offset(5), .s_index(3)) icache (
   .*,
   // Arbiter
   .pmem_resp(arb_icache_resp),
@@ -183,7 +184,8 @@ prefetcher pf(.*,
 .pf_rdata(arb_pf_rdata), 
 .pf_cline_address(arb_pf_address),
 .pf_read(arb_pf_read), 
-.pf_resp(arb_pf_resp)
-.);
+.pf_resp(arb_pf_resp), 
+.pf_address(arb_pf_address)
+);
 
 endmodule : mp4

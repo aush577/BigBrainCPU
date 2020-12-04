@@ -22,7 +22,7 @@ module prefetch_arbiter (
     output logic [31:0] arb_mem_address,
     output logic arb_mem_read,
     output logic arb_mem_write,
-    output logic [255:0] arb_mem_wdata,
+    output logic [255:0] arb_mem_wdata
 
     //Prefetching
     input logic arb_pf_read,
@@ -86,7 +86,7 @@ begin : state_actions
       arb_mem_read = 1;
       arb_mem_address = arb_pf_address;
       arb_pf_rdata = arb_mem_rdata;
-      arb_pf_resp = arb_mem_resp;
+      arb_pf_resp = mem_resp;
     end
     default: set_defaults();
   endcase
