@@ -77,9 +77,8 @@ datapath dp (
   .*
 );
 
-new_cache icache (
+new_cache #(.s_offset(5), .s_index(3)) icache (
   .*,
-
   // Arbiter
   .pmem_resp(arb_icache_resp),
   .pmem_rdata(arb_icache_rdata),
@@ -98,9 +97,8 @@ new_cache icache (
   .mem_rdata_cpu(icache_rdata)
 );
 
-new_cache dcache (
+new_cache #(.s_offset(5), .s_index(3)) dcache (
   .*,
-
   // Arbiter
   .pmem_resp(arb_dcache_resp),
   .pmem_rdata(arb_dcache_rdata),
