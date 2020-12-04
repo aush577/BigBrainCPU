@@ -48,7 +48,7 @@ logic [31:0] arb_icache_address;
 logic arb_icache_read;
 logic arb_icache_write;
 logic [255:0] arb_icache_wdata;
-      
+
 // D-Cache <-> Arbiter
 logic arb_dcache_resp;
 logic [255:0] arb_dcache_rdata;
@@ -57,13 +57,21 @@ logic arb_dcache_read;
 logic arb_dcache_write;
 logic [255:0] arb_dcache_wdata;
 
-// Arbiter <-> Cacheline
+// Arbiter <-> EWB
 logic arb_mem_resp;
 logic [255:0] arb_mem_rdata;
 logic [31:0] arb_mem_address;
 logic arb_mem_read;
 logic arb_mem_write;
 logic [255:0] arb_mem_wdata;
+
+// EWB <-> Cacheline Adapter
+logic [255:0] ewb_rdata_i;
+logic ewb_resp_i;
+logic ewb_read_o;
+logic ewb_write_o;
+logic [255:0] ewb_wdata_o;
+logic [31:0] ewb_address_o;
 
 datapath dp (
   .*
@@ -115,17 +123,37 @@ arbiter arbiter (
   .*
 );
 
+ewb ewb (
+  .*,
+
+  // Lower level port
+  .ewb_read_i(arb_mem_read),
+  .ewb_write_i(arb_mem_write),
+  .ewb_wdata_i(arb_mem_wdata),
+  .ewb_address_i(arb_mem_address),
+  .ewb_rdata_o(arb_mem_rdata),
+  .ewb_resp_o(arb_mem_resp)
+
+  // Higher level port        (.*)'ed
+  // .ewb_rdata_i(),
+  // .ewb_resp_i(),
+  // .ewb_read_o(),
+  // .ewb_write_o(),
+  // .ewb_wdata_o(),
+  // .ewb_address_o()
+);
+
 cacheline_adaptor cacheline_adaptor (
   .clk(clk),
 	.reset_n(~rst),
 
-	// Arbiter
-	.line_i(arb_mem_wdata),
-	.line_o(arb_mem_rdata),
-	.address_i(arb_mem_address),
-	.read_i(arb_mem_read),
-	.write_i(arb_mem_write),
-	.resp_o(arb_mem_resp),
+	// EWB
+	.line_i(ewb_wdata_o),
+	.line_o(ewb_rdata_i),
+	.address_i(ewb_address_o),
+	.read_i(ewb_read_o),
+	.write_i(ewb_write_o),
+	.resp_o(ewb_resp_i),
 
 	// Memory
 	.burst_i(mem_rdata),

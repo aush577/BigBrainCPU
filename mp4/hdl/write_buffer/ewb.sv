@@ -25,7 +25,7 @@ logic hit;
 logic ld_data_addr;
 logic ld_status;
 logic rdata_o_sel;
-logic status_reg_in;
+logic addr_o_sel;
 
 ewb_control ewb_control
 (
@@ -36,5 +36,12 @@ ewb_datapath ewb_datapath
 (
   .*
 );
+
+// assign ewb_rdata_o = ewb_rdata_i;
+// assign ewb_resp_o = ewb_resp_i;
+// assign ewb_read_o = ewb_read_i;
+// assign ewb_write_o = ewb_write_i;
+// assign ewb_wdata_o = ewb_wdata_i;
+// assign ewb_address_o = ewb_address_i;
 
 endmodule : ewb

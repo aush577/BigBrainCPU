@@ -17,7 +17,7 @@ module ewb_datapath
   input ld_data_addr,
   input ld_status,
   input rdata_o_sel,
-  input status_reg_in,
+  input addr_o_sel,
   output logic hit
 );
 
@@ -28,7 +28,7 @@ logic status_reg_out;
 assign hit = (addr_reg_out == ewb_address_i) & status_reg_out;
 assign ewb_rdata_o = (rdata_o_sel) ? data_reg_out : ewb_rdata_i;
 assign ewb_wdata_o = data_reg_out;
-assign ewb_address_o = addr_reg_out;
+assign ewb_address_o = (addr_o_sel) ? addr_reg_out : ewb_address_i;
 
 register #(.width(32)) 
 addr_reg (
@@ -50,7 +50,7 @@ register #(.width(1))
 status_reg (    // 0 = invalid, 1 = valid
   .*,
   .load(ld_status),
-  .in(status_reg_in),
+  .in(1'b1),
   .out(status_reg_out)
 );
 
