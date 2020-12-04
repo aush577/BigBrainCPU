@@ -265,4 +265,4 @@ always_comb begin
 	
 end
 
-endmodule : new_cache_datapath
+endmodule : prefetch_cache_datapath

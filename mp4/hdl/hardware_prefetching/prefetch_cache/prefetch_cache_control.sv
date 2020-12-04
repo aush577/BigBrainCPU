@@ -205,4 +205,4 @@ begin
 	state <= next_state;
 end
 
-endmodule : new_cache_control
+endmodule : prefetch_cache_control

@@ -1,4 +1,4 @@
-module arbiter (
+module prefetch_arbiter (
     input clk,
     input rst,
 
@@ -154,4 +154,4 @@ always_ff @(posedge clk) begin
   end
 end
 
-endmodule : arbiter
+endmodule : prefetch_arbiter

@@ -76,10 +76,11 @@ logic pf_cline_addres;
 logic pf_cache_way;
 
 //Prefetcher <-> Arbiter
-logic pf_read;
-logic pf_address;
-logic [255:0] pf_rdata;
-logic pf_resp;
+logic arb_pf_read,
+logic arb_pf_address,
+logic [255:0] arb_pf_rdata,
+logic arb_pf_resp
+
 // EWB <-> Cacheline Adapter
 logic [255:0] ewb_rdata_i;
 logic ewb_resp_i;
@@ -178,6 +179,11 @@ cacheline_adaptor cacheline_adaptor (
 );
 
 
-prefetcher pf(.*);
+prefetcher pf(.*, 
+.pf_rdata(arb_pf_rdata), 
+.pf_cline_address(arb_pf_address),
+.pf_read(arb_pf_read), 
+.pf_resp(arb_pf_resp)
+.);
 
 endmodule : mp4
