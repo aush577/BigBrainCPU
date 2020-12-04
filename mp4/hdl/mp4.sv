@@ -65,6 +65,22 @@ logic arb_mem_read;
 logic arb_mem_write;
 logic [255:0] arb_mem_wdata;
 
+// I-Cache <-> Prefetcher
+logic prefetch_start;
+logic [31:0] cacheline_address;
+logic cache_way;
+
+logic [255:0] prefetch_rdata;
+logic prefetch_ready;
+logic pf_cline_addres;
+logic pf_cache_way;
+
+//Prefetcher <-> Arbiter
+logic pf_read;
+logic pf_address;
+logic [255:0] pf_rdata;
+logic pf_resp;
+
 datapath dp (
   .*
 );
@@ -135,5 +151,8 @@ cacheline_adaptor cacheline_adaptor (
 	.write_o(mem_write),
 	.resp_i(mem_resp)
 );
+
+
+prefetcher pf(.*);
 
 endmodule : mp4

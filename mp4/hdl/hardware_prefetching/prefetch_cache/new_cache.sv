@@ -26,6 +26,16 @@ module new_cache #(
 	output pmem_write,
 	output [255:0] pmem_wdata,
 	output [31:0] pmem_address
+
+	//Prefetcher
+	output logic prefetch_start,
+    output logic [31:0] cacheline_address,
+    output logic cache_way,
+
+    input logic [255:0] prefetch_rdata,
+    input logic prefetch_ready,
+    input logic pf_cline_address,
+    input logic pf_cache_way
 );
 
 
