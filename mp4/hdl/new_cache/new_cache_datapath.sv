@@ -43,18 +43,18 @@ module new_cache_datapath #(
 	output logic way
 );
 
-logic [s_index:0] index_in;
-assign index_in = mem_address[7:5];
+logic [s_index-1:0] index_in;
+assign index_in = mem_address[(s_offset + s_index - 1):s_offset];
 
-logic [s_tag:0] tag_in;
-assign tag_in = mem_address[31:8];
+logic [s_tag-1:0] tag_in;
+assign tag_in = mem_address[31:(s_offset + s_index)];
 
 logic dirty_0_out, dirty_1_out;
 
 logic valid_0_out, valid_1_out;
 
-logic [s_tag:0] tag_0_out, tag_1_out;
-logic [s_tag:0] tag_out;
+logic [s_tag-1:0] tag_0_out, tag_1_out;
+logic [s_tag-1:0] tag_out;
 
 logic lru_out;
 
