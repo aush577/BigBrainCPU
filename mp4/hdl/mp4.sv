@@ -49,6 +49,21 @@ logic arb_icache_read;
 logic arb_icache_write;
 logic [255:0] arb_icache_wdata;
 
+// I-Cache <-> Prefetcher
+logic prefetch_start;
+logic [31:0] cacheline_address;
+logic cache_way;
+logic [255:0] prefetch_rdata;
+logic prefetch_ready;
+logic [31:0] pf_cline_address;
+logic pf_cache_way;
+
+// Prefetcher <-> Arbiter
+logic arb_pf_read;
+logic [31:0] arb_pf_address;
+logic [255:0] arb_pf_rdata;
+logic arb_pf_resp;
+
 // D-Cache <-> Arbiter
 logic arb_dcache_resp;
 logic [255:0] arb_dcache_rdata;
@@ -85,8 +100,8 @@ datapath dp (
   .*
 );
 
-new_cache #(.s_offset(5), .s_index(3)) icache (
-  .*,
+prefetch_cache #(.s_offset(5), .s_index(3)) icache (
+  .*,  // Prefetcher
   // Arbiter
   .pmem_resp(arb_icache_resp),
   .pmem_rdata(arb_icache_rdata),
@@ -103,6 +118,14 @@ new_cache #(.s_offset(5), .s_index(3)) icache (
   .mem_wdata_cpu(32'b0),
   .mem_resp(icache_resp),
   .mem_rdata_cpu(icache_rdata)
+);
+
+prefetcher pf(
+  .*, 
+  .pf_rdata(arb_pf_rdata),
+  .pf_read(arb_pf_read), 
+  .pf_resp(arb_pf_resp), 
+  .pf_address(arb_pf_address)
 );
 
 new_cache #(.s_offset(5), .s_index(3)) dcache (
@@ -125,7 +148,7 @@ new_cache #(.s_offset(5), .s_index(3)) dcache (
   .mem_rdata_cpu(dcache_rdata)
 );
 
-arbiter arbiter (
+prefetch_arbiter arbiter (
   .*
 );
 
