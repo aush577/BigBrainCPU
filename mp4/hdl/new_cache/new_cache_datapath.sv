@@ -12,14 +12,14 @@ module new_cache_datapath #(
 
 	// Bus Adapter / CPU
 	input logic [31:0] mem_address,
-	input logic [255:0] mem_wdata256,
+	input logic [s_line-1:0] mem_wdata256,
 	input logic [31:0] mem_byte_enable256,
-	output logic [255:0] mem_rdata256,
+	output logic [s_line-1:0] mem_rdata256,
 	
 	// Cacheline Adapter
-	input logic [255:0] pmem_rdata,
+	input logic [s_line-1:0] pmem_rdata,
 	output logic [31:0] pmem_address,
-	output logic [255:0] pmem_wdata,
+	output logic [s_line-1:0] pmem_wdata,
 	
 	// Control
 	input logic data_in_sel,
@@ -43,24 +43,24 @@ module new_cache_datapath #(
 	output logic way
 );
 
-logic [2:0] index_in;
+logic [s_index:0] index_in;
 assign index_in = mem_address[7:5];
 
-logic [23:0] tag_in;
+logic [s_tag:0] tag_in;
 assign tag_in = mem_address[31:8];
 
 logic dirty_0_out, dirty_1_out;
 
 logic valid_0_out, valid_1_out;
 
-logic [23:0] tag_0_out, tag_1_out;
-logic [23:0] tag_out;
+logic [s_tag:0] tag_0_out, tag_1_out;
+logic [s_tag:0] tag_out;
 
 logic lru_out;
 
-logic [255:0] data_in;
-logic [255:0] data_0_out, data_1_out;
-logic [255:0] data_out;
+logic [s_line-1:0] data_in;
+logic [s_line-1:0] data_0_out, data_1_out;
+logic [s_line-1:0] data_out;
 assign pmem_wdata = data_out;
 assign mem_rdata256 = data_out;
 
@@ -72,7 +72,7 @@ assign hit_0 = ((tag_0_out == tag_in) & valid_0_out);
 assign hit_1 = ((tag_1_out == tag_in) & valid_1_out);
 assign miss = ~(hit_0 | hit_1);
 
-new_array #(.s_index(3), .width(1)) dirty_array_0 (
+new_array #(.s_index(s_index), .width(1)) dirty_array_0 (
 	.*,
 	.read(1'b1),
 	.load(ld_dirty_0),
@@ -82,7 +82,7 @@ new_array #(.s_index(3), .width(1)) dirty_array_0 (
 	.dataout(dirty_0_out)
 );
 
-new_array #(.s_index(3), .width(1)) dirty_array_1 (
+new_array #(.s_index(s_index), .width(1)) dirty_array_1 (
 	.*,
 	.read(1'b1),
 	.load(ld_dirty_1),
@@ -92,7 +92,7 @@ new_array #(.s_index(3), .width(1)) dirty_array_1 (
 	.dataout(dirty_1_out)
 );
 
-new_array #(.s_index(3), .width(1)) valid_array_0 (
+new_array #(.s_index(s_index), .width(1)) valid_array_0 (
 	.*,
 	.read(1'b1),
 	.load(ld_valid_0),
@@ -102,7 +102,7 @@ new_array #(.s_index(3), .width(1)) valid_array_0 (
 	.dataout(valid_0_out)
 );
 
-new_array #(.s_index(3), .width(1)) valid_array_1 (
+new_array #(.s_index(s_index), .width(1)) valid_array_1 (
 	.*,
 	.read(1'b1),
 	.load(ld_valid_1),
@@ -112,7 +112,7 @@ new_array #(.s_index(3), .width(1)) valid_array_1 (
 	.dataout(valid_1_out)
 );
 
-new_array #(.s_index(3), .width(24)) tag_array_0 (
+new_array #(.s_index(s_index), .width(s_tag)) tag_array_0 (
 	.*,
 	.read(1'b1),
 	.load(ld_tag_0),
@@ -122,7 +122,7 @@ new_array #(.s_index(3), .width(24)) tag_array_0 (
 	.dataout(tag_0_out)
 );
 
-new_array #(.s_index(3), .width(24)) tag_array_1 (
+new_array #(.s_index(s_index), .width(s_tag)) tag_array_1 (
 	.*,
 	.read(1'b1),
 	.load(ld_tag_1),
@@ -132,7 +132,7 @@ new_array #(.s_index(3), .width(24)) tag_array_1 (
 	.dataout(tag_1_out)
 );
 
-new_array #(.s_index(3), .width(1)) lru_array (
+new_array #(.s_index(s_index), .width(1)) lru_array (
 	.*,
 	.read(1'b1),
 	.load(ld_lru),
@@ -142,7 +142,7 @@ new_array #(.s_index(3), .width(1)) lru_array (
 	.dataout(lru_out)
 );
 
-new_data_array #(.s_offset(5), .s_index(3)) data_array_0 (
+new_data_array #(.s_offset(s_offset), .s_index(s_index)) data_array_0 (
 	.*,
   .read(1'b1),
   .write_en(wr_en_data_0),
@@ -152,7 +152,7 @@ new_data_array #(.s_offset(5), .s_index(3)) data_array_0 (
 	.dataout(data_0_out)
 );
 
-new_data_array #(.s_offset(5), .s_index(3)) data_array_1 (
+new_data_array #(.s_offset(s_offset), .s_index(s_index)) data_array_1 (
 	.*,
   .read(1'b1),
   .write_en(wr_en_data_1),

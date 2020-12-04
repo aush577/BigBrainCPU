@@ -20,18 +20,18 @@ module new_cache #(
 	output mem_resp,
 
 	// Cacheline Adapter
-	input [255:0] pmem_rdata,
+	input [s_line-1:0] pmem_rdata,
 	input pmem_resp,
 	output pmem_read,
 	output pmem_write,
-	output [255:0] pmem_wdata,
+	output [s_line-1:0] pmem_wdata,
 	output [31:0] pmem_address
 );
 
 
 // Bus Adapter - Cache
-logic [255:0] mem_wdata256;
-logic [255:0] mem_rdata256;
+logic [s_line-1:0] mem_wdata256;
+logic [s_line-1:0] mem_rdata256;
 logic [31:0] mem_byte_enable256;
 
 // Control - Datapath;
