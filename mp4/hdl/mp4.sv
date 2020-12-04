@@ -78,7 +78,7 @@ logic pf_cache_way;
 
 //Prefetcher <-> Arbiter
 logic arb_pf_read;
-logic arb_pf_address;
+logic [31:0] arb_pf_address;
 logic [255:0] arb_pf_rdata;
 logic arb_pf_resp;
 

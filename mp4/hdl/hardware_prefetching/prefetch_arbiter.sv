@@ -26,7 +26,7 @@ module prefetch_arbiter (
 
     //Prefetching
     input logic arb_pf_read,
-    input logic arb_pf_address,
+    input logic [31:0] arb_pf_address,
     output logic [255:0] arb_pf_rdata,
     output logic arb_pf_resp
 
