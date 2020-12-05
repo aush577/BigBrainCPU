@@ -175,7 +175,7 @@ prefetch_arbiter arbiter (
   .*
 );
 
-l2_cache #(.s_offset(5), .s_index(3)) l2_cache (
+l2_cache #(.s_offset(5), .s_index(4)) l2_cache (
   .*,
 
   // EWB

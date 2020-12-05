@@ -220,14 +220,22 @@ mp4 dut(
 logic tournament_pred_delay1;
 logic tournament_pred_delay2;
 
-int tourn_br_pred_correct = 0;
-int tourn_br_pred_incorrect = 0;
 int total_br = 0;
-int num_flushes = 0;
 int total_jalr = 0;
+int btb_correct_br = 0;
+int ras_correct_br = 0;
+int tourn_correct_br = 0;
+
+int num_flushes = 0;
 int dcache_stall_cnt = 0;
 int icache_stall_cnt = 0;
 
+int dcache_hits = 0;
+int dcache_misses = 0;
+int icache_hits = 0;
+int icache_misses = 0;
+
+// Delaying signals
 always_ff @(posedge clk) begin
     if (~dut.dp.dcache_stall & ~dut.dp.icache_stall) begin
         tournament_pred_delay1 <= dut.dp.tournament.pred_br;
@@ -239,28 +247,43 @@ always_ff @(posedge clk) begin
     if (dut.dp.dcache_stall) begin
         dcache_stall_cnt += 1;
     end
-    
     if (dut.dp.icache_stall) begin
         icache_stall_cnt += 1;
     end
-    
-    if ((dut.dp.idex_ireg_out.opcode == 7'b1100011) || (dut.dp.idex_ireg_out.opcode == 7'b1101111)) begin //|| (dut.dp.idex_ireg_out.opcode == 7'b1100111)) begin
-        total_br += 1;
-        if (dut.dp.br_en == tournament_pred_delay2) begin
-            tourn_br_pred_correct += 1;
-        end
-        if (dut.dp.br_en != tournament_pred_delay2) begin
-            tourn_br_pred_incorrect += 1;
-        end
-    end
-
-    if (dut.dp.idex_ireg_out.opcode == 7'b1100111) begin
-        total_jalr += 1;
-    end
-    
     if (dut.dp.flush_sig) begin
         num_flushes += 1;
     end
+
+    if (dut.dcache.control.state == 1 && (dut.dcache.mem_read || dut.dcache.mem_write) && ~dut.dcache.control.miss) begin
+        dcache_hits += 1;
+    end
+    if (dut.dcache.control.state == 1 && (dut.dcache.mem_read || dut.dcache.mem_write) && dut.dcache.control.miss) begin
+        dcache_misses += 1;
+    end
+
+    if (dut.icache.control.state == 1 && (dut.icache.mem_read || dut.icache.mem_write) && ~dut.icache.control.miss) begin
+        icache_hits += 1;
+    end
+    if (dut.icache.control.state == 1 && (dut.icache.mem_read || dut.icache.mem_write) && dut.icache.control.miss) begin
+        icache_misses += 1;
+    end
+    
+    if (dut.dp.idex_ireg_out.opcode == 7'b1100111) begin
+        total_jalr +=1;
+    end
+
+    if ((dut.dp.idex_ireg_out.opcode == 7'b1100011) || (dut.dp.idex_ireg_out.opcode == 7'b1101111) || (dut.dp.idex_ireg_out.opcode == 7'b1100111)) begin
+        total_br += 1;
+        if (dut.dp.idex_use_ras_out && dut.dp.idex_ras_addr_out == {dut.dp.alu_out[31:2], 2'b00}) begin
+            ras_correct_br += 1;
+        end else if (dut.dp.br_en == dut.dp.idex_btb_take_out) begin
+            btb_correct_br += 1;
+        end
+        if (dut.dp.br_en == tournament_pred_delay2) begin
+            tourn_correct_br += 1;
+        end
+    end
+    
 end
 
 

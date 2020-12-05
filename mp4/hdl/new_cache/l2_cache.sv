@@ -53,7 +53,7 @@ new_cache_control control
 	.*
 );
 
-new_cache_datapath datapath
+new_cache_datapath #(.s_index(s_index)) datapath
 (
 	.*
 );
