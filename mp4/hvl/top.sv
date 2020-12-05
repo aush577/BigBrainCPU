@@ -268,19 +268,21 @@ always_ff @(posedge clk) begin
         icache_misses += 1;
     end
     
-    if (dut.dp.idex_ireg_out.opcode == 7'b1100111) begin
-        total_jalr +=1;
-    end
-
-    if ((dut.dp.idex_ireg_out.opcode == 7'b1100011) || (dut.dp.idex_ireg_out.opcode == 7'b1101111) || (dut.dp.idex_ireg_out.opcode == 7'b1100111)) begin
-        total_br += 1;
-        if (dut.dp.idex_use_ras_out && dut.dp.idex_ras_addr_out == {dut.dp.alu_out[31:2], 2'b00}) begin
-            ras_correct_br += 1;
-        end else if (dut.dp.br_en == dut.dp.idex_btb_take_out) begin
-            btb_correct_br += 1;
+    if (~dut.dp.dcache_stall && ~dut.dp.icache_stall) begin
+        if (dut.dp.idex_ireg_out.opcode == 7'b1100111) begin
+            total_jalr +=1;
         end
-        if (dut.dp.br_en == tournament_pred_delay2) begin
-            tourn_correct_br += 1;
+
+        if ((dut.dp.idex_ireg_out.opcode == 7'b1100011) || (dut.dp.idex_ireg_out.opcode == 7'b1101111) || (dut.dp.idex_ireg_out.opcode == 7'b1100111)) begin
+            total_br += 1;
+            if (dut.dp.idex_use_ras_out && dut.dp.idex_ras_addr_out == {dut.dp.alu_out[31:2], 2'b00}) begin
+                ras_correct_br += 1;
+            end else if (dut.dp.br_en == dut.dp.idex_btb_take_out) begin
+                btb_correct_br += 1;
+            end
+            if (dut.dp.br_en == tournament_pred_delay2) begin
+                tourn_correct_br += 1;
+            end
         end
     end
     
