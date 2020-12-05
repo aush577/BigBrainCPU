@@ -224,6 +224,7 @@ int tourn_br_pred_correct = 0;
 int tourn_br_pred_incorrect = 0;
 int total_br = 0;
 int num_flushes = 0;
+int total_jalr = 0;
 int dcache_stall_cnt = 0;
 int icache_stall_cnt = 0;
 
@@ -251,6 +252,10 @@ always_ff @(posedge clk) begin
         if (dut.dp.br_en != tournament_pred_delay2) begin
             tourn_br_pred_incorrect += 1;
         end
+    end
+
+    if (dut.dp.idex_ireg_out.opcode == 7'b1100111) begin
+        total_jalr += 1;
     end
     
     if (dut.dp.flush_sig) begin

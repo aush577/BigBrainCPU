@@ -71,6 +71,14 @@ logic [31:0] arb_dcache_address;
 logic arb_dcache_read;
 logic arb_dcache_write;
 logic [255:0] arb_dcache_wdata;
+//Buffers
+logic buf_dcache_resp;
+logic [255:0] buf_dcache_rdata;
+logic [31:0] buf_dcache_address;
+logic [255:0] buf_dcache_wdata;
+logic buf_dcache_read;
+logic buf_dcache_write;
+
 
 // Arbiter <-> L2 Cache
 logic arb_mem_resp;
@@ -131,12 +139,12 @@ prefetcher pf(
 new_cache #(.s_offset(5), .s_index(3)) dcache (
   .*,
   // Arbiter
-  .pmem_resp(arb_dcache_resp),
-  .pmem_rdata(arb_dcache_rdata),
-  .pmem_address(arb_dcache_address),
-  .pmem_wdata(arb_dcache_wdata),
-  .pmem_read(arb_dcache_read),
-  .pmem_write(arb_dcache_write),
+  .pmem_resp(buf_dcache_resp),
+  .pmem_rdata(buf_dcache_rdata),
+  .pmem_address(buf_dcache_address),
+  .pmem_wdata(buf_dcache_wdata),
+  .pmem_read(buf_dcache_read),
+  .pmem_write(buf_dcache_write),
 
   // CPU
   .mem_read(dcache_read),
@@ -147,6 +155,21 @@ new_cache #(.s_offset(5), .s_index(3)) dcache (
   .mem_resp(dcache_resp),
   .mem_rdata_cpu(dcache_rdata)
 );
+
+assign buf_dcache_resp = arb_dcache_resp;
+assign buf_dcache_rdata = arb_dcache_rdata;
+assign arb_dcache_address = buf_dcache_address;
+assign arb_dcache_wdata = buf_dcache_wdata;
+assign arb_dcache_read = buf_dcache_read;
+assign arb_dcache_write = buf_dcache_write;
+// always_ff @(posedge clk) begin
+//   // buf_dcache_resp <= arb_dcache_resp;
+//   // buf_dcache_rdata <= arb_dcache_rdata;
+//   arb_dcache_address <= buf_dcache_address;
+//   arb_dcache_wdata <= buf_dcache_wdata;
+//   arb_dcache_read <= buf_dcache_read;
+//   arb_dcache_write <= buf_dcache_write;
+// end
 
 prefetch_arbiter arbiter (
   .*

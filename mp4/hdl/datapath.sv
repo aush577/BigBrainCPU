@@ -37,6 +37,8 @@ assign cp3_address = icache_address - 32'h60 + 32'h100;
 instr_struct ifid_ireg_out;
 logic [31:0] ifid_pcreg_out;
 logic ifid_btb_take_out;
+logic ifid_use_ras_out;
+logic [31:0] ifid_ras_addr_out;
 
 // ID
 ctrl_word_struct ctrl_word_out;
@@ -50,6 +52,8 @@ ctrl_word_struct idex_ctrlreg_out;
 logic [31:0] idex_rs1reg_out;
 logic [31:0] idex_rs2reg_out;
 logic idex_btb_take_out;
+logic idex_use_ras_out;
+logic [31:0] idex_ras_addr_out;
 
 // EX
 logic [31:0] alumux1_out;
@@ -101,6 +105,9 @@ logic [31:0] regfilemux_out;
 logic btb_hit;
 logic [31:0] btb_pc_out;
 logic pred_br;
+logic [31:0] ras_addr_out;
+logic use_ras;
+logic ras_empty;
 
 // dCache stall
 logic dcache_stall;
@@ -113,7 +120,9 @@ assign icache_stall = icache_read & ~icache_resp;
 // Branch misprediction flush
 logic flush_sig;
 // assign flush_sig = (br_en == 1'b1) & ~dcache_stall & ~icache_stall; //Static not taken
-assign flush_sig = (br_en != idex_btb_take_out) & ~dcache_stall & ~icache_stall;
+assign flush_sig =  ((br_en != idex_btb_take_out && idex_use_ras_out == 1'b0)
+                    || ((idex_use_ras_out && idex_ras_addr_out != {alu_out[31:2], 2'b00}) && idex_btb_take_out == 1'b0))
+                    & ~dcache_stall & ~icache_stall;
 
 // Pipe control signals
 pipe_ctrl_struct pipe_ctrl;
@@ -167,7 +176,7 @@ always_comb begin : IF_MUXES
   //   default: `BAD_MUX_SEL;
   // endcase
 
-  unique case ({br_en, idex_btb_take_out})
+  unique case ({ br_en, (idex_btb_take_out || (idex_use_ras_out && idex_ras_addr_out == {alu_out[31:2], 2'b00})) })
     2'b00: begin
       pcmux_out = pcreg_out + 4;
     end
@@ -185,7 +194,16 @@ always_comb begin : IF_MUXES
     end
   endcase
 
-  if (pred_br & btb_hit & (br_en == idex_btb_take_out)) begin
+  if (use_ras) begin
+    if (idex_ireg_out.opcode != op_jalr && (br_en == idex_btb_take_out)) begin
+      pc_input = ras_addr_out;
+    end else if (idex_ireg_out.opcode == op_jalr && (idex_use_ras_out && idex_ras_addr_out == {alu_out[31:2], 2'b00})) begin
+      pc_input = ras_addr_out;
+    end else begin
+      pc_input = pcmux_out;
+    end
+  end
+  else if (pred_br & btb_hit & ((br_en == idex_btb_take_out) || (idex_use_ras_out && idex_ras_addr_out == {alu_out[31:2], 2'b00}))) begin
     pc_input = btb_pc_out;
   end else begin
     pc_input = pcmux_out;
@@ -437,7 +455,7 @@ btb #(.BTB_INDEX(5), .BTB_IDX_START(6))
 btb (
   .*,
   .btb_load(
-    (idex_ireg_out.opcode == op_br || idex_ireg_out.opcode == op_jal) //|| idex_ireg_out.opcode == op_jalr) 
+    (idex_ireg_out.opcode == op_br || idex_ireg_out.opcode == op_jal) // || idex_ireg_out.opcode == op_jalr) 
     & ~dcache_stall & ~icache_stall
   ),
   .br_en(br_en),
@@ -462,6 +480,19 @@ tournament (
   .read_opcode(icache_rdata[6:0]),
   .pred_br(pred_br)
 );
+
+ras ras (
+  .*,
+  .stall(dcache_stall | icache_stall),
+  .ex_instr(idex_ireg_out),
+  .ex_pcp4(idex_pcreg_out + 4),
+  .target_addr_out(ras_addr_out),
+  .empty(ras_empty)
+);
+
+assign use_ras =  (icache_rdata[6:0] == op_jalr & ~ras_empty)
+                  & (icache_rdata[19:15] == 'd1 || icache_rdata[19:15] == 'd5)  // rs1
+                  & ~(icache_rdata[11:7] == 'd1 || icache_rdata[11:7] == 'd5);  // rd
 
 // ******************** Branch Prediction END ********************
 
@@ -498,6 +529,25 @@ ifid_btb_take (
   .in(btb_hit & pred_br),
   .out(ifid_btb_take_out)
 );
+
+register #(.width(32))
+ifid_ras_addr (
+  .*,
+  .rst(pipe_ctrl.ifid_rst),
+  .load(pipe_ctrl.ifid_ld),
+  .in(ras_addr_out),
+  .out(ifid_ras_addr_out)
+);
+
+register #(.width(1))
+ifid_use_ras (
+  .*,
+  .rst(pipe_ctrl.ifid_rst),
+  .load(pipe_ctrl.ifid_ld),
+  .in(use_ras),
+  .out(ifid_use_ras_out)
+);
+
 
 
 // ********** ID/EX Pipeline Registers **********
@@ -554,6 +604,25 @@ idex_btb_take (
   .in(ifid_btb_take_out),
   .out(idex_btb_take_out)
 );
+
+register #(.width(32))
+idex_ras_addr (
+  .*,
+  .rst(pipe_ctrl.ifid_rst),
+  .load(pipe_ctrl.ifid_ld),
+  .in(ifid_ras_addr_out),
+  .out(idex_ras_addr_out)
+);
+
+register #(.width(1))
+idex_use_ras (
+  .*,
+  .rst(pipe_ctrl.ifid_rst),
+  .load(pipe_ctrl.ifid_ld),
+  .in(ifid_use_ras_out),
+  .out(idex_use_ras_out)
+);
+
 
 // ********** EX/MEM Pipeline Registers **********
 register #(.width($bits(instr_struct)))
