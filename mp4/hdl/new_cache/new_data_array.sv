@@ -31,9 +31,10 @@ logic [s_line-1:0] _dataout;
 assign dataout = _dataout;
 
 always_comb begin
-  for (int i = 0; i < 32; i++) begin
-    _dataout[8*i +: 8] = (write_en[i] & (rindex == windex)) ? datain[8*i +: 8] : data[rindex][8*i +: 8];
-  end
+  // for (int i = 0; i < 32; i++) begin
+  //   _dataout[8*i +: 8] = (write_en[i] & (rindex == windex)) ? datain[8*i +: 8] : data[rindex][8*i +: 8];
+  // end
+  _dataout = data[rindex];
 end
 
 always_ff @(posedge clk)

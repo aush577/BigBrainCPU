@@ -29,7 +29,8 @@ logic [width-1:0] _dataout;
 assign dataout = _dataout;
 
 always_comb begin
-  _dataout = (load & (rindex == windex)) ? datain : data[rindex];
+  // _dataout = (load & (rindex == windex)) ? datain : data[rindex];
+  _dataout = data[rindex];
 end
 
 always_ff @(posedge clk)

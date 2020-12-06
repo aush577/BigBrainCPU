@@ -99,7 +99,7 @@ assign icache_stall = icache_read & ~icache_resp;
 
 // Branch misprediction flush
 logic flush_sig;
-assign flush_sig = (br_en == 1'b1) & ~dcache_stall & ~icache_stall;  // Static predict not taken
+assign flush_sig = (exmem_brreg_out == 1'b1) & ~dcache_stall & ~icache_stall;  // Static predict not taken
 
 // Pipe control signals
 pipe_ctrl_struct pipe_ctrl;
@@ -109,7 +109,7 @@ assign pipe_ctrl.exmem_ld = ~dcache_stall & ~icache_stall;
 assign pipe_ctrl.memwb_ld = ~dcache_stall & ~icache_stall;
 assign pipe_ctrl.ifid_rst = rst | flush_sig;
 assign pipe_ctrl.idex_rst = rst | flush_sig;
-assign pipe_ctrl.exmem_rst = rst;
+assign pipe_ctrl.exmem_rst = rst | flush_sig;
 assign pipe_ctrl.memwb_rst = rst;
 
 
@@ -148,14 +148,14 @@ endfunction
 always_comb begin : IF_MUXES
   unique case (pcmux_sel)
     pcmux::pc_plus4:  pcmux_out = pcreg_out + 4;
-    // pcmux::alu_out:   pcmux_out = {exmem_alureg_out[31:2], 2'b0};
-    pcmux::alu_out:   pcmux_out = {alu_out[31:2], 2'b0};
+    pcmux::alu_out:   pcmux_out = {exmem_alureg_out[31:2], 2'b0};
+    // pcmux::alu_out:   pcmux_out = {alu_out[31:2], 2'b0};
     default: `BAD_MUX_SEL;
   endcase
 end
 
 // assign pcmux_sel = pcmux::pcmux_sel_t'(exmem_brreg_out);
-assign pcmux_sel = pcmux::pcmux_sel_t'(br_en);
+assign pcmux_sel = pcmux::pcmux_sel_t'(exmem_brreg_out);
 assign icache_address = {pcreg_out[31:2], 2'b0};
 assign icache_read = (rst) ? 1'b0 : 1'b1;
 
