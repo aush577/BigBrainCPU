@@ -48,22 +48,7 @@ logic [31:0] arb_icache_address;
 logic arb_icache_read;
 logic arb_icache_write;
 logic [255:0] arb_icache_wdata;
-
-// I-Cache <-> Prefetcher
-logic prefetch_start;
-logic [31:0] cacheline_address;
-logic cache_way;
-logic [255:0] prefetch_rdata;
-logic prefetch_ready;
-logic [31:0] pf_cline_address;
-logic pf_cache_way;
-
-// Prefetcher <-> Arbiter
-logic arb_pf_read;
-logic [31:0] arb_pf_address;
-logic [255:0] arb_pf_rdata;
-logic arb_pf_resp;
-
+      
 // D-Cache <-> Arbiter
 logic arb_dcache_resp;
 logic [255:0] arb_dcache_rdata;
@@ -71,16 +56,8 @@ logic [31:0] arb_dcache_address;
 logic arb_dcache_read;
 logic arb_dcache_write;
 logic [255:0] arb_dcache_wdata;
-//Buffers
-logic buf_dcache_resp;
-logic [255:0] buf_dcache_rdata;
-logic [31:0] buf_dcache_address;
-logic [255:0] buf_dcache_wdata;
-logic buf_dcache_read;
-logic buf_dcache_write;
 
-
-// Arbiter <-> L2 Cache
+// Arbiter <-> Cacheline
 logic arb_mem_resp;
 logic [255:0] arb_mem_rdata;
 logic [31:0] arb_mem_address;
@@ -88,28 +65,13 @@ logic arb_mem_read;
 logic arb_mem_write;
 logic [255:0] arb_mem_wdata;
 
-// L2 Cache <-> EWB
-logic ewb_read_i;
-logic ewb_write_i;
-logic [255:0] ewb_wdata_i;
-logic [31:0] ewb_address_i;
-logic [255:0] ewb_rdata_o;
-logic ewb_resp_o;
-
-// EWB <-> Cacheline Adapter
-logic [255:0] ewb_rdata_i;
-logic ewb_resp_i;
-logic ewb_read_o;
-logic ewb_write_o;
-logic [255:0] ewb_wdata_o;
-logic [31:0] ewb_address_o;
-
 datapath dp (
   .*
 );
 
-prefetch_cache #(.s_offset(5), .s_index(3)) icache (
-  .*,  // Prefetcher
+new_cache icache (
+  .*,
+
   // Arbiter
   .pmem_resp(arb_icache_resp),
   .pmem_rdata(arb_icache_rdata),
@@ -128,23 +90,16 @@ prefetch_cache #(.s_offset(5), .s_index(3)) icache (
   .mem_rdata_cpu(icache_rdata)
 );
 
-prefetcher pf(
-  .*, 
-  .pf_rdata(arb_pf_rdata),
-  .pf_read(arb_pf_read), 
-  .pf_resp(arb_pf_resp), 
-  .pf_address(arb_pf_address)
-);
-
-new_cache #(.s_offset(5), .s_index(3)) dcache (
+new_cache dcache (
   .*,
+
   // Arbiter
-  .pmem_resp(buf_dcache_resp),
-  .pmem_rdata(buf_dcache_rdata),
-  .pmem_address(buf_dcache_address),
-  .pmem_wdata(buf_dcache_wdata),
-  .pmem_read(buf_dcache_read),
-  .pmem_write(buf_dcache_write),
+  .pmem_resp(arb_dcache_resp),
+  .pmem_rdata(arb_dcache_rdata),
+  .pmem_address(arb_dcache_address),
+  .pmem_wdata(arb_dcache_wdata),
+  .pmem_read(arb_dcache_read),
+  .pmem_write(arb_dcache_write),
 
   // CPU
   .mem_read(dcache_read),
@@ -156,46 +111,7 @@ new_cache #(.s_offset(5), .s_index(3)) dcache (
   .mem_rdata_cpu(dcache_rdata)
 );
 
-assign buf_dcache_resp = arb_dcache_resp;
-assign buf_dcache_rdata = arb_dcache_rdata;
-assign arb_dcache_address = buf_dcache_address;
-assign arb_dcache_wdata = buf_dcache_wdata;
-assign arb_dcache_read = buf_dcache_read;
-assign arb_dcache_write = buf_dcache_write;
-// always_ff @(posedge clk) begin
-//   // buf_dcache_resp <= arb_dcache_resp;
-//   // buf_dcache_rdata <= arb_dcache_rdata;
-//   arb_dcache_address <= buf_dcache_address;
-//   arb_dcache_wdata <= buf_dcache_wdata;
-//   arb_dcache_read <= buf_dcache_read;
-//   arb_dcache_write <= buf_dcache_write;
-// end
-
-prefetch_arbiter arbiter (
-  .*
-);
-
-l2_cache #(.s_offset(5), .s_index(4)) l2_cache (
-  .*,
-
-  // EWB
-  .pmem_resp(ewb_resp_o),
-  .pmem_rdata(ewb_rdata_o),
-  .pmem_address(ewb_address_i),
-  .pmem_wdata(ewb_wdata_i),
-  .pmem_read(ewb_read_i),
-  .pmem_write(ewb_write_i),
-
-  // Arbiter
-  .mem_read(arb_mem_read),
-  .mem_write(arb_mem_write),
-  .mem_address(arb_mem_address),
-  .mem_wdata256(arb_mem_wdata),
-  .mem_resp(arb_mem_resp),
-  .mem_rdata256(arb_mem_rdata)
-);
-
-ewb ewb (
+arbiter arbiter (
   .*
 );
 
@@ -203,13 +119,13 @@ cacheline_adaptor cacheline_adaptor (
   .clk(clk),
 	.reset_n(~rst),
 
-	// EWB
-	.line_i(ewb_wdata_o),
-	.line_o(ewb_rdata_i),
-	.address_i(ewb_address_o),
-	.read_i(ewb_read_o),
-	.write_i(ewb_write_o),
-	.resp_o(ewb_resp_i),
+	// Arbiter
+	.line_i(arb_mem_wdata),
+	.line_o(arb_mem_rdata),
+	.address_i(arb_mem_address),
+	.read_i(arb_mem_read),
+	.write_i(arb_mem_write),
+	.resp_o(arb_mem_resp),
 
 	// Memory
 	.burst_i(mem_rdata),

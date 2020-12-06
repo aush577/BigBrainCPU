@@ -78,6 +78,10 @@ ctrl_word_struct exmem_ctrlreg_out;
 logic [31:0] exmem_rs2reg_out;
 logic [31:0] exmem_alureg_out;
 logic exmem_brreg_out;
+logic exmem_btb_take_out;
+logic [31:0] exmem_ras_addr_out;
+logic exmem_use_ras_out;
+logic exmem_br_en_out;
 
 // MEM
 mem_forwardmux2::mem_forwardmux2_sel_t mem_forwardmux2_sel;
@@ -120,8 +124,8 @@ assign icache_stall = icache_read & ~icache_resp;
 // Branch misprediction flush
 logic flush_sig;
 // assign flush_sig = (br_en == 1'b1) & ~dcache_stall & ~icache_stall; //Static not taken
-assign flush_sig =  ((br_en != idex_btb_take_out && idex_use_ras_out == 1'b0)
-                    || ((idex_use_ras_out && idex_ras_addr_out != {alu_out[31:2], 2'b00}) && idex_btb_take_out == 1'b0))
+assign flush_sig =  ((exmem_br_en_out != exmem_btb_take_out && exmem_use_ras_out == 1'b0)
+                    || ((exmem_use_ras_out && exmem_ras_addr_out != {exmem_alureg_out[31:2], 2'b00}) && exmem_btb_take_out == 1'b0))
                     & ~dcache_stall & ~icache_stall;
 
 // Pipe control signals
@@ -132,7 +136,7 @@ assign pipe_ctrl.exmem_ld = ~dcache_stall & ~icache_stall;
 assign pipe_ctrl.memwb_ld = ~dcache_stall & ~icache_stall;
 assign pipe_ctrl.ifid_rst = rst | flush_sig;
 assign pipe_ctrl.idex_rst = rst | flush_sig;
-assign pipe_ctrl.exmem_rst = rst;
+assign pipe_ctrl.exmem_rst = rst | flush_sig;
 assign pipe_ctrl.memwb_rst = rst;
 
 
@@ -176,15 +180,15 @@ always_comb begin : IF_MUXES
   //   default: `BAD_MUX_SEL;
   // endcase
 
-  unique case ({ br_en, (idex_btb_take_out || (idex_use_ras_out && idex_ras_addr_out == {alu_out[31:2], 2'b00})) })
+  unique case ({exmem_br_en_out, (exmem_btb_take_out || (exmem_use_ras_out && exmem_ras_addr_out == {exmem_alureg_out[31:2], 2'b00}))})
     2'b00: begin
       pcmux_out = pcreg_out + 4;
     end
     2'b01: begin
-      pcmux_out = idex_pcreg_out + 4;
+      pcmux_out = exmem_pcreg_out + 4;
     end
     2'b10: begin
-      pcmux_out = {alu_out[31:2], 2'b0};
+      pcmux_out = {exmem_alureg_out[31:2], 2'b0};
     end
     2'b11: begin
       pcmux_out = pcreg_out + 4;
@@ -195,22 +199,22 @@ always_comb begin : IF_MUXES
   endcase
 
   if (use_ras) begin
-    if (idex_ireg_out.opcode != op_jalr && (br_en == idex_btb_take_out)) begin
+    if (exmem_ireg_out.opcode != op_jalr && (exmem_br_en_out == exmem_btb_take_out)) begin
       pc_input = ras_addr_out;
-    end else if (idex_ireg_out.opcode == op_jalr && (idex_use_ras_out && idex_ras_addr_out == {alu_out[31:2], 2'b00})) begin
+    end else if (exmem_ireg_out.opcode == op_jalr && (exmem_use_ras_out && exmem_ras_addr_out == {exmem_alureg_out[31:2], 2'b00})) begin
       pc_input = ras_addr_out;
     end else begin
       pc_input = pcmux_out;
     end
   end
-  else if (pred_br & btb_hit & ((br_en == idex_btb_take_out) || (idex_use_ras_out && idex_ras_addr_out == {alu_out[31:2], 2'b00}))) begin
+  else if (pred_br & btb_hit & ((exmem_br_en_out == exmem_btb_take_out) || (exmem_use_ras_out && exmem_ras_addr_out == {exmem_alureg_out[31:2], 2'b00}))) begin
     pc_input = btb_pc_out;
   end else begin
     pc_input = pcmux_out;
   end
 end
 
-assign pcmux_sel = pcmux::pcmux_sel_t'(br_en);
+assign pcmux_sel = pcmux::pcmux_sel_t'(exmem_br_en_out);
 assign icache_address = {pcreg_out[31:2], 2'b0};
 assign icache_read = (rst) ? 1'b0 : 1'b1;
 
@@ -455,13 +459,13 @@ btb #(.BTB_INDEX(5), .BTB_IDX_START(6))
 btb (
   .*,
   .btb_load(
-    (idex_ireg_out.opcode == op_br || idex_ireg_out.opcode == op_jal) // || idex_ireg_out.opcode == op_jalr) 
+    (exmem_ireg_out.opcode == op_br || exmem_ireg_out.opcode == op_jal) // || idex_ireg_out.opcode == op_jalr) 
     & ~dcache_stall & ~icache_stall
   ),
-  .br_en(br_en),
+  .br_en(exmem_br_en_out),
   .pc_address_if(pcreg_out),
-  .pc_address_ex(idex_pcreg_out),
-  .br_address(alu_out),
+  .pc_address_ex(exmem_pcreg_out),
+  .br_address(exmem_alureg_out),
   .hit(btb_hit),
   .predicted_pc(btb_pc_out)
 );
@@ -471,12 +475,12 @@ tournament (
   .*,
   .stall(dcache_stall | icache_stall),
   .read_pc(pcreg_out),
-  .write_pc(idex_pcreg_out),
+  .write_pc(exmem_pcreg_out),
   .pred_ld(
-    (idex_ireg_out.opcode == op_br || idex_ireg_out.opcode == op_jal || idex_ireg_out.opcode == op_jalr) 
+    (exmem_ireg_out.opcode == op_br || exmem_ireg_out.opcode == op_jal || exmem_ireg_out.opcode == op_jalr) 
     & ~dcache_stall & ~icache_stall
   ),
-  .cpu_br_en(br_en),
+  .cpu_br_en(exmem_br_en_out),
   .read_opcode(icache_rdata[6:0]),
   .pred_br(pred_br)
 );
@@ -484,8 +488,8 @@ tournament (
 ras ras (
   .*,
   .stall(dcache_stall | icache_stall),
-  .ex_instr(idex_ireg_out),
-  .ex_pcp4(idex_pcreg_out + 4),
+  .ex_instr(exmem_ireg_out),
+  .ex_pcp4(exmem_pcreg_out + 4),
   .target_addr_out(ras_addr_out),
   .empty(ras_empty)
 );
@@ -680,6 +684,42 @@ exmem_brreg (
   .out(exmem_brreg_out)
 );
 
+//BTB & RAS buffers
+register #(.width(1))
+exmem_btb_take (
+  .*,
+  .rst(pipe_ctrl.exmem_rst),
+  .load(pipe_ctrl.exmem_ld),
+  .in(idex_btb_take_out),
+  .out(exmem_btb_take_out)
+);
+
+register #(.width(32))
+exmem_ras_addr (
+  .*,
+  .rst(pipe_ctrl.exmem_rst),
+  .load(pipe_ctrl.exmem_ld),
+  .in(idex_ras_addr_out),
+  .out(exmem_ras_addr_out)
+);
+
+register #(.width(1))
+exmem_use_ras (
+  .*,
+  .rst(pipe_ctrl.exmem_rst),
+  .load(pipe_ctrl.exmem_ld),
+  .in(idex_use_ras_out),
+  .out(exmem_use_ras_out)
+);
+
+register #(.width(1))
+exmem_br_en (
+  .*,
+  .rst(pipe_ctrl.exmem_rst),
+  .load(pipe_ctrl.exmem_ld),
+  .in(br_en),
+  .out(exmem_br_en_out)
+);
 
 // ********** MEM/WB Pipeline Registers **********
 register #(.width($bits(instr_struct)))

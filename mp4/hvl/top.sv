@@ -73,7 +73,7 @@ always_ff @(posedge clk) begin
 
         dcache_rdata_delay <= dut.dp.dcache_rdata;
 
-        br_taken_delay1 <= dut.dp.br_en;
+        br_taken_delay1 <= dut.dp.exmem_br_en_out;
         br_taken_delay2 <= br_taken_delay1;
     end
 end
@@ -118,7 +118,7 @@ assign rvfi.load_regfile = dut.dp.memwb_ctrlreg_out.regfile_ld;
 assign rvfi.rd_addr      = dut.dp.memwb_ireg_out.rd;
 assign rvfi.rd_wdata     = (dut.dp.memwb_ireg_out.rd == '0) ? 0 : dut.dp.regfilemux_out;
 assign rvfi.pc_rdata     = dut.dp.memwb_pcreg_out;
-assign rvfi.pc_wdata     = (br_taken_delay2) ? {dut.dp.memwb_alureg_out[31:2], 2'b00} : dut.dp.memwb_pcreg_out + 4;
+assign rvfi.pc_wdata     = (br_taken_delay1) ? {dut.dp.memwb_alureg_out[31:2], 2'b00} : dut.dp.memwb_pcreg_out + 4;
 
 assign rvfi.mem_addr     = dcache_address_delay;
 assign rvfi.mem_rmask    = rmask_delay;
