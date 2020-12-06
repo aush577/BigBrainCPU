@@ -455,7 +455,7 @@ end
 
 // ******************** Branch Prediction BEGIN ********************
 
-btb #(.BTB_INDEX(5), .BTB_IDX_START(6))
+btb #(.BTB_INDEX(6), .BTB_IDX_START(7))
 btb (
   .*,
   .btb_load(
@@ -485,7 +485,7 @@ tournament (
   .pred_br(pred_br)
 );
 
-ras ras (
+ras #(.RAS_INDEX(4)) ras (
   .*,
   .stall(dcache_stall | icache_stall),
   .ex_instr(exmem_ireg_out),

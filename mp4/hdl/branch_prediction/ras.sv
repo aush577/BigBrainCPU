@@ -58,7 +58,7 @@ always_comb begin
   end
 end
 
-stack stack (
+stack #(.RAS_INDEX(RAS_INDEX)) stack (
   .*,
   .addr_in(ex_pcp4),
   .addr_out(target_addr_out)
