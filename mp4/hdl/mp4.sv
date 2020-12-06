@@ -65,9 +65,63 @@ logic arb_mem_read;
 logic arb_mem_write;
 logic [255:0] arb_mem_wdata;
 
+// L2 Cache <-> EWB
+logic ewb_read_i;
+logic ewb_write_i;
+logic [255:0] ewb_wdata_i;
+logic [31:0] ewb_address_i;
+logic [255:0] ewb_rdata_o;
+logic ewb_resp_o;
+
+// EWB <-> Cacheline Adapter
+logic [255:0] ewb_rdata_i;
+logic ewb_resp_i;
+logic ewb_read_o;
+logic ewb_write_o;
+logic [255:0] ewb_wdata_o;
+logic [31:0] ewb_address_o;
+
+
+logic l2_pmem_resp;
+logic [255:0] l2_pmem_rdata;
+logic [31:0] l2_pmem_address;
+logic [255:0] l2_pmem_wdata;
+logic l2_pmem_read;
+logic l2_pmem_write;
+
 datapath dp (
   .*
 );
+
+l2_cache #(.s_offset(5), .s_index(4)) l2_cache (
+  .*,
+
+  // cacheline
+  .pmem_resp(l2_pmem_resp),
+  .pmem_rdata(l2_pmem_rdata),
+  .pmem_address(l2_pmem_address),
+  .pmem_wdata(l2_pmem_wdata),
+  .pmem_read(l2_pmem_read),
+  .pmem_write(l2_pmem_write),
+
+  // arb
+  .mem_read(arb_mem_read),
+  .mem_write(arb_mem_write),
+  .mem_address(arb_mem_address),
+  .mem_wdata256(arb_mem_wdata),
+  .mem_resp(arb_mem_resp),
+  .mem_rdata256(arb_mem_rdata)
+);
+
+// ewb ewb (
+//   .*, 
+//   .ewb_rdata_i(arb_dcache_rdata),
+//   .ewb_resp_i(arb_dcache_resp),
+//   .ewb_read_o(arb_dcache_read),
+//   .ewb_write_o(arb_dcache_write),
+//   .ewb_wdata_o(arb_dcache_wdata),
+//   .ewb_address_o(arb_dcache_address)
+// );
 
 new_cache icache (
   .*,
@@ -101,6 +155,14 @@ new_cache dcache (
   .pmem_read(arb_dcache_read),
   .pmem_write(arb_dcache_write),
 
+  // //EWB
+  // .pmem_resp(ewb_resp_o),
+  // .pmem_rdata(ewb_rdata_o),
+  // .pmem_address(ewb_address_i),
+  // .pmem_wdata(ewb_wdata_i),
+  // .pmem_read(ewb_read_i),
+  // .pmem_write(ewb_write_i),
+
   // CPU
   .mem_read(dcache_read),
   .mem_write(dcache_write),
@@ -119,13 +181,13 @@ cacheline_adaptor cacheline_adaptor (
   .clk(clk),
 	.reset_n(~rst),
 
-	// Arbiter
-	.line_i(arb_mem_wdata),
-	.line_o(arb_mem_rdata),
-	.address_i(arb_mem_address),
-	.read_i(arb_mem_read),
-	.write_i(arb_mem_write),
-	.resp_o(arb_mem_resp),
+	// l2
+	.line_i(l2_pmem_wdata),
+	.line_o(l2_pmem_rdata),
+	.address_i(l2_pmem_address),
+	.read_i(l2_pmem_read),
+	.write_i(l2_pmem_write),
+	.resp_o(l2_pmem_resp),
 
 	// Memory
 	.burst_i(mem_rdata),

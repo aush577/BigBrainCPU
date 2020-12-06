@@ -485,7 +485,8 @@ tournament (
   .pred_br(pred_br)
 );
 
-ras ras (
+ras #(.RAS_INDEX(3))
+ras (
   .*,
   .stall(dcache_stall | icache_stall),
   .ex_instr(exmem_ireg_out),
