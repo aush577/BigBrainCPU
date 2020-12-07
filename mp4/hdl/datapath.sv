@@ -374,9 +374,9 @@ always_comb begin: WDATA_LOGIC // Store instructions
 end
 
 always_comb begin : LOAD_LOGIC // Load instructions
-  logic [1:0] load_byte_shift;
+  // logic [1:0] load_byte_shift;
   load_funct3_t load_funct;
-  load_byte_shift = exmem_alureg_mem_out[1:0];
+  // load_byte_shift = exmem_alureg_mem_out[1:0];
   load_funct = load_funct3_t'(exmem_ireg_out.funct3);
 
   lw_out = dcache_rdata;
@@ -682,7 +682,7 @@ exmem_alureg_mem (
   .*,
   .rst(pipe_ctrl.exmem_rst),
   .load(pipe_ctrl.exmem_ld),
-  .in(alu_out),
+  .in(alumux1_out + alumux2_out), // .in(alu_out),
   .out(exmem_alureg_mem_out)
 );
 
