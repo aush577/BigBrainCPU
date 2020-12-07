@@ -44,7 +44,6 @@ always @(posedge clk) begin
     else if (push & pop & ~empty) begin
       target_addr[stack_ptr-1] <= addr_in;
     end
-
   end
 end
   

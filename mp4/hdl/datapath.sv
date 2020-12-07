@@ -412,6 +412,15 @@ always_comb begin : LOAD_LOGIC // Load instructions
   
   load_dcache_mbe = (exmem_ireg_out.opcode == op_load) ? 4'b1111 : 4'b0000;
 
+  // unique case (load_funct)
+  //   lb:   load_logic_out = lb_out;
+  //   lbu:  load_logic_out = lbu_out;
+  //   lh:   load_logic_out = lh_out;
+  //   lhu:  load_logic_out = lhu_out;
+  //   lw:   load_logic_out = lw_out;
+  //   default: load_logic_out = lw_out;
+  // endcase
+
   if (load_funct == lb) begin
     load_logic_out = lb_out;
     // load_dcache_mbe = 4'b0001 << load_byte_shift;

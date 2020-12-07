@@ -219,6 +219,10 @@ mp4 dut(
 //buffers for counters
 logic tournament_pred_delay1;
 logic tournament_pred_delay2;
+logic global_pred_br_delay1;
+logic global_pred_br_delay2;
+logic local_pred_br_delay1;
+logic local_pred_br_delay2;
 
 int total_br = 0;
 int total_jalr = 0;
@@ -235,11 +239,23 @@ int dcache_misses = 0;
 int icache_hits = 0;
 int icache_misses = 0;
 
+int only_global_correct = 0;
+int only_local_correct = 0;
+int global_pred = 0;
+int local_pred = 0;
+
 // Delaying signals
 always_ff @(posedge clk) begin
     if (~dut.dp.dcache_stall & ~dut.dp.icache_stall) begin
         tournament_pred_delay1 <= dut.dp.tournament.pred_br;
         tournament_pred_delay2 <= tournament_pred_delay1;
+
+        global_pred_br_delay1 <= dut.dp.tournament.global_pred_br;
+        global_pred_br_delay2 <= global_pred_br_delay1;
+
+        local_pred_br_delay1 <= dut.dp.tournament.local_pred_br;
+        local_pred_br_delay2 <= local_pred_br_delay1;
+        
     end
 end
 
@@ -269,6 +285,13 @@ always_ff @(posedge clk) begin
     end
     
     if (~dut.dp.dcache_stall && ~dut.dp.icache_stall) begin
+
+        if (dut.dp.tournament.meta_predictor[1] == 1'b1) begin
+            global_pred += 1;
+        end else begin
+            local_pred +=1 ;
+        end
+
         if (dut.dp.idex_ireg_out.opcode == 7'b1100111) begin
             total_jalr +=1;
         end
@@ -282,6 +305,12 @@ always_ff @(posedge clk) begin
             end
             if (dut.dp.br_en == tournament_pred_delay2) begin
                 tourn_correct_br += 1;
+            end
+            if (dut.dp.br_en == local_pred_br_delay2 && dut.dp.br_en != global_pred_br_delay2) begin
+                only_local_correct += 1;
+            end
+            if (dut.dp.br_en == global_pred_br_delay2 && dut.dp.br_en != local_pred_br_delay2) begin
+                only_global_correct += 1;
             end
         end
     end
