@@ -48,7 +48,7 @@ logic [31:0] arb_icache_address;
 logic arb_icache_read;
 logic arb_icache_write;
 logic [255:0] arb_icache_wdata;
-
+      
 // D-Cache <-> Arbiter
 logic arb_dcache_resp;
 logic [255:0] arb_dcache_rdata;
@@ -57,7 +57,7 @@ logic arb_dcache_read;
 logic arb_dcache_write;
 logic [255:0] arb_dcache_wdata;
 
-// Arbiter <-> L2 Cache
+// Arbiter <-> Cacheline
 logic arb_mem_resp;
 logic [255:0] arb_mem_rdata;
 logic [31:0] arb_mem_address;
@@ -81,12 +81,69 @@ logic ewb_write_o;
 logic [255:0] ewb_wdata_o;
 logic [31:0] ewb_address_o;
 
+
+logic l2_pmem_resp;
+logic [255:0] l2_pmem_rdata;
+logic [31:0] l2_pmem_address;
+logic [255:0] l2_pmem_wdata;
+logic l2_pmem_read;
+logic l2_pmem_write;
+
+//buffer signals from L2 <-> Arbiter
+logic arb_mem_read_buf;
+logic arb_mem_write_buf;
+logic [31:0] arb_mem_address_buf;
+logic [255:0] arb_mem_wdata_buf;
+logic arb_mem_resp_buf;
+logic [255:0] arb_mem_rdata_buf;
+
 datapath dp (
   .*
 );
 
-new_cache #(.s_offset(5), .s_index(3)) icache (
+l2_cache #(.s_offset(5), .s_index(4)) l2_cache (
   .*,
+
+  // cacheline
+  .pmem_resp(l2_pmem_resp),
+  .pmem_rdata(l2_pmem_rdata),
+  .pmem_address(l2_pmem_address),
+  .pmem_wdata(l2_pmem_wdata),
+  .pmem_read(l2_pmem_read),
+  .pmem_write(l2_pmem_write),
+
+  // arb
+  .mem_read(arb_mem_read_buf),
+  .mem_write(arb_mem_write_buf),
+  .mem_address(arb_mem_address_buf),
+  .mem_wdata256(arb_mem_wdata_buf),
+  .mem_resp(arb_mem_resp_buf),
+  .mem_rdata256(arb_mem_rdata_buf)
+);
+
+
+always_ff @(posedge clk) begin
+  arb_mem_read_buf <= arb_mem_read;
+  arb_mem_write_buf <= arb_mem_write;
+  arb_mem_address_buf <= arb_mem_address;
+  arb_mem_wdata_buf <= arb_mem_wdata;
+end
+assign arb_mem_resp = arb_mem_resp_buf;
+assign arb_mem_rdata = arb_mem_rdata_buf;
+
+// ewb ewb (
+//   .*, 
+//   .ewb_rdata_i(arb_dcache_rdata),
+//   .ewb_resp_i(arb_dcache_resp),
+//   .ewb_read_o(arb_dcache_read),
+//   .ewb_write_o(arb_dcache_write),
+//   .ewb_wdata_o(arb_dcache_wdata),
+//   .ewb_address_o(arb_dcache_address)
+// );
+
+new_cache icache (
+  .*,
+
   // Arbiter
   .pmem_resp(arb_icache_resp),
   .pmem_rdata(arb_icache_rdata),
@@ -105,8 +162,9 @@ new_cache #(.s_offset(5), .s_index(3)) icache (
   .mem_rdata_cpu(icache_rdata)
 );
 
-new_cache #(.s_offset(5), .s_index(3)) dcache (
+new_cache dcache (
   .*,
+
   // Arbiter
   .pmem_resp(arb_dcache_resp),
   .pmem_rdata(arb_dcache_rdata),
@@ -114,6 +172,14 @@ new_cache #(.s_offset(5), .s_index(3)) dcache (
   .pmem_wdata(arb_dcache_wdata),
   .pmem_read(arb_dcache_read),
   .pmem_write(arb_dcache_write),
+
+  // //EWB
+  // .pmem_resp(ewb_resp_o),
+  // .pmem_rdata(ewb_rdata_o),
+  // .pmem_address(ewb_address_i),
+  // .pmem_wdata(ewb_wdata_i),
+  // .pmem_read(ewb_read_i),
+  // .pmem_write(ewb_write_i),
 
   // CPU
   .mem_read(dcache_read),
@@ -129,41 +195,17 @@ arbiter arbiter (
   .*
 );
 
-l2_cache #(.s_offset(5), .s_index(3)) l2_cache (
-  .*,
-
-  // EWB
-  .pmem_resp(ewb_resp_o),
-  .pmem_rdata(ewb_rdata_o),
-  .pmem_address(ewb_address_i),
-  .pmem_wdata(ewb_wdata_i),
-  .pmem_read(ewb_read_i),
-  .pmem_write(ewb_write_i),
-
-  // Arbiter
-  .mem_read(arb_mem_read),
-  .mem_write(arb_mem_write),
-  .mem_address(arb_mem_address),
-  .mem_wdata256(arb_mem_wdata),
-  .mem_resp(arb_mem_resp),
-  .mem_rdata256(arb_mem_rdata)
-);
-
-ewb ewb (
-  .*
-);
-
 cacheline_adaptor cacheline_adaptor (
   .clk(clk),
 	.reset_n(~rst),
 
-	// EWB
-	.line_i(ewb_wdata_o),
-	.line_o(ewb_rdata_i),
-	.address_i(ewb_address_o),
-	.read_i(ewb_read_o),
-	.write_i(ewb_write_o),
-	.resp_o(ewb_resp_i),
+	// l2
+	.line_i(l2_pmem_wdata),
+	.line_o(l2_pmem_rdata),
+	.address_i(l2_pmem_address),
+	.read_i(l2_pmem_read),
+	.write_i(l2_pmem_write),
+	.resp_o(l2_pmem_resp),
 
 	// Memory
 	.burst_i(mem_rdata),
