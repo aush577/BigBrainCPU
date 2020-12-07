@@ -156,7 +156,7 @@ assign itf.inst_resp =  dut.dp.icache_resp;
 assign itf.inst_rdata = dut.dp.icache_rdata;
 
 assign itf.data_read =  dut.dp.dcache_read;
-assign itf.data_write = dut.dp.dcache_write;
+assign itf.data_write = (dut.dp.dcache_write & dut.dp.dcache_resp);
 assign itf.data_mbe =   dut.dp.dcache_mbe;
 assign itf.data_addr =  dut.dp.dcache_address;
 assign itf.data_wdata = dut.dp.dcache_wdata;
