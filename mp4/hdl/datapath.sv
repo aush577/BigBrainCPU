@@ -82,6 +82,7 @@ logic exmem_btb_take_out;
 logic [31:0] exmem_ras_addr_out;
 logic exmem_use_ras_out;
 logic exmem_br_en_out;
+logic [31:0] exmem_alureg_mem_out;
 
 // MEM
 mem_forwardmux2::mem_forwardmux2_sel_t mem_forwardmux2_sel;
@@ -336,7 +337,7 @@ always_comb begin: MEM_MUXES
   endcase
 end
 
-assign dcache_address = {exmem_alureg_out[31:2], 2'b0};
+assign dcache_address = {exmem_alureg_mem_out[31:2], 2'b0};
 assign dcache_read = exmem_ctrlreg_out.dcache_read;
 assign dcache_write = exmem_ctrlreg_out.dcache_write;
 
@@ -347,8 +348,8 @@ always_comb begin: WDATA_LOGIC // Store instructions
   logic [4:0] bit_shift;
   logic [1:0] byte_shift;
   store_funct3_t store_funct;
-  bit_shift = exmem_alureg_out[1:0] << 3;
-  byte_shift = exmem_alureg_out[1:0];
+  bit_shift = exmem_alureg_mem_out[1:0] << 3;
+  byte_shift = exmem_alureg_mem_out[1:0];
   store_funct = store_funct3_t'(exmem_ireg_out.funct3);
   
   if (store_funct == sb) begin      // sb
@@ -375,18 +376,18 @@ end
 always_comb begin : LOAD_LOGIC // Load instructions
   logic [1:0] load_byte_shift;
   load_funct3_t load_funct;
-  load_byte_shift = exmem_alureg_out[1:0];
+  load_byte_shift = exmem_alureg_mem_out[1:0];
   load_funct = load_funct3_t'(exmem_ireg_out.funct3);
 
   lw_out = dcache_rdata;
 
-  unique case (exmem_alureg_out[1:0])
+  unique case (exmem_alureg_mem_out[1:0])
     2'b00: lh_out = {{16{dcache_rdata[15]}}, dcache_rdata[15:0]};
     2'b10: lh_out = {{16{dcache_rdata[31]}}, dcache_rdata[31:16]};
     default: lh_out = 32'b0;
   endcase
 
-  unique case (exmem_alureg_out[1:0])
+  unique case (exmem_alureg_mem_out[1:0])
     2'b00: lb_out = {{24{dcache_rdata[ 7]}}, dcache_rdata[7:0]};
     2'b01: lb_out = {{24{dcache_rdata[15]}}, dcache_rdata[15:8]};
     2'b10: lb_out = {{24{dcache_rdata[23]}}, dcache_rdata[23:16]};
@@ -394,7 +395,7 @@ always_comb begin : LOAD_LOGIC // Load instructions
     default: lb_out = 32'b0;
   endcase
 
-  unique case (exmem_alureg_out[1:0])
+  unique case (exmem_alureg_mem_out[1:0])
     2'b00: lbu_out = {24'b0, dcache_rdata[7:0]};
     2'b01: lbu_out = {24'b0, dcache_rdata[15:8]};
     2'b10: lbu_out = {24'b0, dcache_rdata[23:16]};
@@ -402,7 +403,7 @@ always_comb begin : LOAD_LOGIC // Load instructions
     default: lbu_out = 32'b0;
   endcase
 
-  unique case (exmem_alureg_out[1:0])
+  unique case (exmem_alureg_mem_out[1:0])
     2'b00: lhu_out = {16'b0, dcache_rdata[15:0]};
     2'b10: lhu_out = {16'b0, dcache_rdata[31:16]};
     default: lhu_out = 32'b0;
@@ -674,6 +675,15 @@ exmem_alureg (
   .load(pipe_ctrl.exmem_ld),
   .in(alu_out),
   .out(exmem_alureg_out)
+);
+
+register #(.width(32))
+exmem_alureg_mem (
+  .*,
+  .rst(pipe_ctrl.exmem_rst),
+  .load(pipe_ctrl.exmem_ld),
+  .in(alu_out),
+  .out(exmem_alureg_mem_out)
 );
 
 register #(.width(1))
