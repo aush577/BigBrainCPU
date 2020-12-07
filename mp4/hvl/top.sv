@@ -156,7 +156,7 @@ assign itf.inst_resp =  dut.dp.icache_resp;
 assign itf.inst_rdata = dut.dp.icache_rdata;
 
 assign itf.data_read =  dut.dp.dcache_read;
-assign itf.data_write = dut.dp.dcache_write;
+assign itf.data_write = dut.dp.dcache_write & dut.dp.dcache_resp & ~dut.dp.dcache_stall & ~dut.dp.icache_stall;   // Autograder
 assign itf.data_mbe =   dut.dp.dcache_mbe;
 assign itf.data_addr =  dut.dp.dcache_address;
 assign itf.data_wdata = dut.dp.dcache_wdata;
@@ -219,10 +219,13 @@ mp4 dut(
 //buffers for counters
 logic tournament_pred_delay1;
 logic tournament_pred_delay2;
+logic tournament_pred_delay3;
 logic global_pred_br_delay1;
 logic global_pred_br_delay2;
+logic global_pred_br_delay3;
 logic local_pred_br_delay1;
 logic local_pred_br_delay2;
+logic local_pred_br_delay3;
 
 int total_br = 0;
 int total_jalr = 0;
@@ -241,21 +244,21 @@ int icache_misses = 0;
 
 int only_global_correct = 0;
 int only_local_correct = 0;
-int global_pred = 0;
-int local_pred = 0;
 
 // Delaying signals
 always_ff @(posedge clk) begin
     if (~dut.dp.dcache_stall & ~dut.dp.icache_stall) begin
         tournament_pred_delay1 <= dut.dp.tournament.pred_br;
         tournament_pred_delay2 <= tournament_pred_delay1;
+        tournament_pred_delay3 <= tournament_pred_delay2;
 
         global_pred_br_delay1 <= dut.dp.tournament.global_pred_br;
         global_pred_br_delay2 <= global_pred_br_delay1;
+        global_pred_br_delay3 <= global_pred_br_delay2;
 
         local_pred_br_delay1 <= dut.dp.tournament.local_pred_br;
         local_pred_br_delay2 <= local_pred_br_delay1;
-        
+        local_pred_br_delay3 <= local_pred_br_delay2;
     end
 end
 
@@ -286,30 +289,24 @@ always_ff @(posedge clk) begin
     
     if (~dut.dp.dcache_stall && ~dut.dp.icache_stall) begin
 
-        if (dut.dp.tournament.meta_predictor[1] == 1'b1) begin
-            global_pred += 1;
-        end else begin
-            local_pred +=1 ;
-        end
-
-        if (dut.dp.idex_ireg_out.opcode == 7'b1100111) begin
+        if (dut.dp.exmem_ireg_out.opcode == 7'b1100111) begin
             total_jalr +=1;
         end
 
-        if ((dut.dp.idex_ireg_out.opcode == 7'b1100011) || (dut.dp.idex_ireg_out.opcode == 7'b1101111) || (dut.dp.idex_ireg_out.opcode == 7'b1100111)) begin
+        if ((dut.dp.exmem_ireg_out.opcode == 7'b1100011) || (dut.dp.exmem_ireg_out.opcode == 7'b1101111) || (dut.dp.exmem_ireg_out.opcode == 7'b1100111)) begin
             total_br += 1;
-            if (dut.dp.idex_use_ras_out && dut.dp.idex_ras_addr_out == {dut.dp.alu_out[31:2], 2'b00}) begin
+            if (dut.dp.exmem_use_ras_out && dut.dp.exmem_ras_addr_out == {dut.dp.exmem_alureg_out[31:2], 2'b00}) begin
                 ras_correct_br += 1;
-            end else if (dut.dp.br_en == dut.dp.idex_btb_take_out) begin
+            end else if (dut.dp.exmem_br_en_out == dut.dp.exmem_btb_take_out) begin
                 btb_correct_br += 1;
             end
-            if (dut.dp.br_en == tournament_pred_delay2) begin
+            if (dut.dp.exmem_br_en_out == tournament_pred_delay3) begin
                 tourn_correct_br += 1;
             end
-            if (dut.dp.br_en == local_pred_br_delay2 && dut.dp.br_en != global_pred_br_delay2) begin
+            if (dut.dp.exmem_br_en_out == local_pred_br_delay3 && dut.dp.exmem_br_en_out != global_pred_br_delay3) begin
                 only_local_correct += 1;
             end
-            if (dut.dp.br_en == global_pred_br_delay2 && dut.dp.br_en != local_pred_br_delay2) begin
+            if (dut.dp.exmem_br_en_out == global_pred_br_delay3 && dut.dp.exmem_br_en_out != local_pred_br_delay3) begin
                 only_global_correct += 1;
             end
         end
